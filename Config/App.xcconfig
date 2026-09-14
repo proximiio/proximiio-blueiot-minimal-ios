@@ -1,0 +1,16 @@
+// Base build configuration — TRACKED. Nothing real belongs in this file.
+//
+// Every key below is deliberately EMPTY here and takes its value from the
+// untracked Config/Secrets.xcconfig, which the `#include?` at the bottom pulls
+// in last (in xcconfig the last assignment wins). Empty values leave the
+// Info.plist keys empty and the app shows a one-line setup hint rather than
+// crashing.
+//
+// Copy Config/Secrets.example.xcconfig to Config/Secrets.xcconfig and fill it
+// in there. That file is gitignored, so a real credential cannot be committed.
+//
+// NOTE: "//" starts a comment in xcconfig — write URLs as https:/$()/host, no quotes.
+PROXIMIIO_APPLICATION_TOKEN =
+BLUEIOT_CLOUD_RELAY_URL =
+BLUEIOT_CLOUD_RELAY_TOKEN =
+#include? "Secrets.xcconfig"
