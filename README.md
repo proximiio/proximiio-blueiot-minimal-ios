@@ -40,8 +40,8 @@ $EDITOR Config/Secrets.xcconfig
 
 `Config/Secrets.xcconfig` is gitignored and is the only place a real *credential*
 may live. `Config/App.xcconfig` is tracked, leaves those three empty and
-`#include?`s your copy last, so what you set wins. It does carry two non-secret
-survey values — see **Floor numbers** below. With any key empty the app still builds and runs, and
+`#include?`s your copy last, so what you set wins. It does carry one non-secret
+survey value — see **Floor numbers** below. With any key empty the app still builds and runs, and
 says on screen which key is missing.
 
 ## Run it
@@ -87,20 +87,22 @@ visible control — a visitor never needs it, and staff are told once. If your
 product wants a visible one, `VenueMapScreen.onChangeWristband` is the single
 call site.
 
-**Floor numbers.** The relay reports the venue engine's floor numbers, and
-`Venue.floorIDsByEngineNumber` turns them into Proximi.io floor ids. It is the
-only place in the app where that translation happens, and getting it wrong puts
-the dot on the wrong level rather than failing loudly — so it takes both of its
-answers from `Config/App.xcconfig` rather than guessing:
+**Floor numbers.** The relay reports the venue engine's floor numbers, and the
+SDK turns them into Proximi.io floor ids on its own: an engine floor number *is*
+a Proximi.io floor level, and the SDK already syncs every floor with its level.
+The app passes no mapping table — passing one would switch that derivation off —
+and a number the venue has no floor for is logged rather than quietly drawn on a
+blank level.
+
+One integer is left, in `Config/App.xcconfig`, because it is the one thing the
+SDK cannot know:
 
 | Key | What it is |
 | --- | --- |
-| `BLUEIOT_GROUND_FLOOR_NO` | Which floor number the engine calls the ground floor. Proximi.io calls it level `0`; Blueiot LocalSense venues usually start at `1`, and this one does. Empty = `0` |
-| `BLUEIOT_ANCHOR_PLACE_ID` | Which place in your organisation this app is deployed in. That building wins every storey it has; other places only fill numbers it lacks. Empty in a single-building organisation |
+| `BLUEIOT_GROUND_FLOOR_NO` | Which floor number the engine calls the ground floor. Proximi.io calls it level `0`; Blueiot LocalSense venues usually start at `1`, and this one does. Empty = `0`, and then this key is not needed at all |
 
-Both are the venue's survey rather than its credentials, so they are tracked with
-this venue's working values. A different venue changes those two lines and
-nothing else.
+It is the venue's survey rather than a credential, so it is tracked with this
+venue's working value, and it goes away the day the deployment is renumbered.
 
 **Following the visitor.** The button at the right of the bottom bar recentres
 the map on the wristband. It is one call into the map library's own follow camera

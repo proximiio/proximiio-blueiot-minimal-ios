@@ -13,7 +13,6 @@
 		6BF91C646DF906686D0CB8E4 /* VenueConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = E185E1345ABCBCD9C8FD96E7 /* VenueConfiguration.swift */; };
 		78A8796A276BF0B7483C03B2 /* VenuePOI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 672CE9E9ED95501810A58F6F /* VenuePOI.swift */; };
 		7C56D4B9BECEA7B0AE68481F /* Venue.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1EF6077D25BBA7565ED23A9 /* Venue.swift */; };
-		972BD64734E1263CDA330019 /* FloorMappingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A92F33F314C1FB9108522BE3 /* FloorMappingTests.swift */; };
 		A80E9C531F921464DB86801E /* WristbandPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = 087ED37D4542CDC98070E133 /* WristbandPrompt.swift */; };
 		BFD50B8F4E0FA87992F6461E /* Proximiio in Frameworks */ = {isa = PBXBuildFile; productRef = 481EF75981CE52268A990007 /* Proximiio */; };
 		C4A9B28FC7F411507CADF121 /* VenueMapScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = F37F6C4BF550743EAED19A26 /* VenueMapScreen.swift */; };
@@ -41,7 +40,6 @@
 		65F7C141BA52D64EF7B32140 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		672CE9E9ED95501810A58F6F /* VenuePOI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VenuePOI.swift; sourceTree = "<group>"; };
 		83F2B6D65B109417E6EE9F23 /* WristbandIDTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WristbandIDTests.swift; sourceTree = "<group>"; };
-		A92F33F314C1FB9108522BE3 /* FloorMappingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloorMappingTests.swift; sourceTree = "<group>"; };
 		BAE7CA172E674FD6B5A16A7A /* POISearchSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = POISearchSheet.swift; sourceTree = "<group>"; };
 		E185E1345ABCBCD9C8FD96E7 /* VenueConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VenueConfiguration.swift; sourceTree = "<group>"; };
 		F1EF6077D25BBA7565ED23A9 /* Venue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Venue.swift; sourceTree = "<group>"; };
@@ -102,7 +100,6 @@
 		69330A4939A1DBD0C5A244BB /* BlueiotMinimalTests */ = {
 			isa = PBXGroup;
 			children = (
-				A92F33F314C1FB9108522BE3 /* FloorMappingTests.swift */,
 				83F2B6D65B109417E6EE9F23 /* WristbandIDTests.swift */,
 			);
 			path = BlueiotMinimalTests;
@@ -241,7 +238,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				972BD64734E1263CDA330019 /* FloorMappingTests.swift in Sources */,
 				06C97467677DCF7D85C49EF2 /* WristbandIDTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

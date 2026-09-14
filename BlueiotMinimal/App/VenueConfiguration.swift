@@ -2,7 +2,7 @@
 //  VenueConfiguration.swift
 //  BlueiotMinimal
 //
-//  The whole of the app's configuration: three credentials and two survey values,
+//  The whole of the app's configuration: three credentials and one survey value,
 //  injected through Config/App.xcconfig (plus the untracked Config/Secrets.xcconfig)
 //  into Info.plist and read here once. None of them is editable at runtime, because a
 //  visitor has no business editing them and this app has no settings screen for staff
@@ -25,17 +25,12 @@ enum VenueConfiguration {
 
     /// Which floor number the venue's Blueiot engine calls the ground floor —
     /// `BLUEIOT_GROUND_FLOOR_NO`. Not required and not a credential: empty means 0,
-    /// which is the engine numbering storeys exactly the way Proximi.io does. See
-    /// ``Venue/floorIDsByEngineNumber(_:groundFloorNumber:anchorPlaceID:)``.
+    /// which is the engine numbering storeys exactly the way Proximi.io does, and is
+    /// the only case that needs no value at all. See ``Venue/follow(_:)``.
     static let groundFloorNumber = value("BlueiotGroundFloorNo").flatMap(Int.init) ?? 0
 
-    /// The Proximi.io place this app is deployed in — `BLUEIOT_ANCHOR_PLACE_ID`.
-    /// Not required: `nil` is right for a single-building organisation. See
-    /// ``Venue/floorIDsByEngineNumber(_:groundFloorNumber:anchorPlaceID:)``.
-    static let anchorPlaceID = value("BlueiotAnchorPlaceId")
-
     /// Which keys are still empty, in one sentence, or `nil` when none are. Only the
-    /// three the app cannot run without; the two survey values have honest defaults.
+    /// three the app cannot run without; the survey value has an honest default.
     static var missing: String? {
         let keys = [
             ("PROXIMIIO_APPLICATION_TOKEN", token),

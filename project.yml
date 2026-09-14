@@ -72,9 +72,8 @@ targets:
         BlueiotCloudRelayURL: $(BLUEIOT_CLOUD_RELAY_URL)
         BlueiotCloudRelayToken: $(BLUEIOT_CLOUD_RELAY_TOKEN)
         # The venue's survey rather than its credentials — see Config/App.xcconfig,
-        # which carries this venue's working values in the tracked file.
+        # which carries this venue's working value in the tracked file.
         BlueiotGroundFloorNo: $(BLUEIOT_GROUND_FLOOR_NO)
-        BlueiotAnchorPlaceId: $(BLUEIOT_ANCHOR_PLACE_ID)
         # This app never asks for any of these — the venue positions the visitor,
         # so nothing on the phone is scanned. The strings are here because App Store
         # validation requires one for every protected API the *linked* SDK binary

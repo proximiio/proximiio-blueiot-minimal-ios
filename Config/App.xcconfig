@@ -14,21 +14,14 @@ PROXIMIIO_APPLICATION_TOKEN =
 BLUEIOT_CLOUD_RELAY_URL =
 BLUEIOT_CLOUD_RELAY_TOKEN =
 
-// The two below are the venue's SURVEY, not credentials, so they carry this venue's
-// working values here in the tracked file. Both are read by `Venue`; see
-// `Venue.floorIDsByEngineNumber` for what each one does to the map.
+// The one below is the venue's SURVEY, not a credential, so it carries this venue's
+// working value here in the tracked file.
 
 // Which floor number the venue's Blueiot LocalSense engine calls the ground floor.
 // Proximi.io calls it level 0; LocalSense deployments are usually numbered from 1,
-// and this one is — the relay reports the ground floor as floor 1. Mapped one-to-one
-// every fix landed a storey too high, on a level the venue has no plan for.
+// and this one is — the relay reports the ground floor as floor 1. The SDK derives
+// the whole number-to-storey table from the venue's own floors; this integer is the
+// single offset it cannot know, and it goes away when the deployment is renumbered.
 // Empty = 0, i.e. the engine numbers storeys exactly the way Proximi.io does.
 BLUEIOT_GROUND_FLOOR_NO = 1
-
-// Which place in the organisation this app is deployed in. One Proximi.io
-// organisation can hold several buildings — this one holds nine, eight of which have
-// a floor at level 0 — and without this the dot lands in whichever building the sync
-// returned first. The value is a place id from the Proximi.io dashboard; this one is
-// Department of Culture and Tourism. Empty in a single-building organisation.
-BLUEIOT_ANCHOR_PLACE_ID = 29d6edf4-7da3-466b-9b77-16d8ccda4f0b
 #include? "Secrets.xcconfig"
