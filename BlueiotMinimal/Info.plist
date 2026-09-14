@@ -2,8 +2,6 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>BlueiotAnchorPlaceId</key>
-	<string>$(BLUEIOT_ANCHOR_PLACE_ID)</string>
 	<key>BlueiotCloudRelayToken</key>
 	<string>$(BLUEIOT_CLOUD_RELAY_TOKEN)</string>
 	<key>BlueiotCloudRelayURL</key>
