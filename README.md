@@ -1,6 +1,6 @@
 # Proximi.io Blueiot — minimal reference app
 
-A complete venue app in 640 lines of Swift across eight files. It asks for the
+A complete venue app in 733 lines of Swift across eight files. It asks for the
 visitor's wristband number once, shows the venue map, searches the venue's places
 and routes to the one they pick. The visitor is positioned by the venue's own
 Blueiot anchors, through the Proximi.io cloud relay — the phone scans nothing.
@@ -38,9 +38,10 @@ $EDITOR Config/Secrets.xcconfig
 | `BLUEIOT_CLOUD_RELAY_URL` | The Proximi.io cloud relay carrying this venue's wristband positions. A bare host is enough |
 | `BLUEIOT_CLOUD_RELAY_TOKEN` | That relay's stream token, sent as `Authorization: Bearer` |
 
-`Config/Secrets.xcconfig` is gitignored and is the only place a real value may
-live. `Config/App.xcconfig` is tracked and stays empty; it `#include?`s your copy
-last, so what you set wins. With any key empty the app still builds and runs, and
+`Config/Secrets.xcconfig` is gitignored and is the only place a real *credential*
+may live. `Config/App.xcconfig` is tracked, leaves those three empty and
+`#include?`s your copy last, so what you set wins. It does carry two non-secret
+survey values — see **Floor numbers** below. With any key empty the app still builds and runs, and
 says on screen which key is missing.
 
 ## Run it
@@ -87,11 +88,26 @@ product wants a visible one, `VenueMapScreen.onChangeWristband` is the single
 call site.
 
 **Floor numbers.** The relay reports the venue engine's floor numbers, and
-`Venue.floorIDsByEngineNumber` maps them to Proximi.io floor ids assuming the
-engine calls the ground floor `0`. Blueiot LocalSense venues are often numbered
-from `1`. If yours is, add the offset there — it is the only place in the app
-where engine floor numbers are translated, and getting it wrong puts the dot on
-the wrong level rather than failing loudly.
+`Venue.floorIDsByEngineNumber` turns them into Proximi.io floor ids. It is the
+only place in the app where that translation happens, and getting it wrong puts
+the dot on the wrong level rather than failing loudly — so it takes both of its
+answers from `Config/App.xcconfig` rather than guessing:
+
+| Key | What it is |
+| --- | --- |
+| `BLUEIOT_GROUND_FLOOR_NO` | Which floor number the engine calls the ground floor. Proximi.io calls it level `0`; Blueiot LocalSense venues usually start at `1`, and this one does. Empty = `0` |
+| `BLUEIOT_ANCHOR_PLACE_ID` | Which place in your organisation this app is deployed in. That building wins every storey it has; other places only fill numbers it lacks. Empty in a single-building organisation |
+
+Both are the venue's survey rather than its credentials, so they are tracked with
+this venue's working values. A different venue changes those two lines and
+nothing else.
+
+**Following the visitor.** The button at the right of the bottom bar recentres
+the map on the wristband. It is one call into the map library's own follow camera
+(`ProximiioMapSession.recentre()` plus `followMyFloor()`) — this app writes no
+camera of its own. Panning, pinching or rotating the map releases the follow; the
+library notices the hand and publishes it through `ProximiioMapSession.cameraMode`,
+which is what fills or hollows the button's symbol.
 
 ## Tests
 

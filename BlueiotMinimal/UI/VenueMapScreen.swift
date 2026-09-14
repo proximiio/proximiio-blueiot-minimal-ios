@@ -8,7 +8,8 @@
 //  floors, the amenities, the blue dot and — given a route — the drawing of it, split
 //  so the floor on screen shows its own segment. What this screen owns is three
 //  lines of app: which place the visitor picked, asking the SDK for a route to it,
-//  and handing that route over.
+//  and handing that route over. The recentre button is a fourth, and it is one call
+//  into the library's own follow camera rather than a camera this app wrote.
 //
 //  Your product's chrome goes in `bottomBar`. Your product's screens go beside this
 //  one.
@@ -106,11 +107,43 @@ struct VenueMapScreen: View {
                 }
                 .accessibilityLabel("Clear route")
             }
+
+            recentreButton
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
         .padding(16)
+    }
+
+    /// "Show me where I am", and nothing else is needed to make it work.
+    ///
+    /// `ProximiioMapSession` owns the follow camera (`MapOptions.camera` defaults to
+    /// `.follow`, so the map is already following when the first fix lands).
+    /// `recentre()` re-arms that camera and eases the zoom back in;
+    /// `followMyFloor()` unpins the storey, because a visitor who taps this while
+    /// looking at another floor means "take me back", and taking them back to a
+    /// storey they are not on would not.
+    ///
+    /// Panning, pinching or rotating the map drops the camera to `.free` on its own —
+    /// the library watches for the hand and publishes the change through
+    /// ``ProximiioMapSession/cameraMode``. This screen only reads that, and must not
+    /// add gesture handling of its own.
+    ///
+    /// Filled symbol while following, outline while free. Disabled until there is a
+    /// position at all: with the wristband silent or the relay down there is nowhere
+    /// to centre on, and a button that looks live and does nothing is worse than one
+    /// that says so.
+    private var recentreButton: some View {
+        Button {
+            session.followMyFloor()
+            session.recentre()
+        } label: {
+            Image(systemName: session.cameraMode == .free ? "location" : "location.fill")
+        }
+        .disabled(session.position == nil)
+        .accessibilityLabel("Centre on me")
+        .accessibilityAddTraits(session.cameraMode == .free ? [] : .isSelected)
     }
 
     /// The only wayfinding in the app: from wherever the wristband says the visitor

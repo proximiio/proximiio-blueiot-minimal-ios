@@ -62,27 +62,74 @@ final class Venue {
             endpoint: endpoint,
             token: VenueConfiguration.relayToken,
             tagID: wristband.canonical,
-            floorNoMap: Self.floorIDsByEngineNumber(floors),
+            floorNoMap: Self.floorIDsByEngineNumber(
+                floors,
+                groundFloorNumber: VenueConfiguration.groundFloorNumber,
+                anchorPlaceID: VenueConfiguration.anchorPlaceID
+            ),
             // Where the dot goes when the relay names a floor the venue does not know.
-            defaultFloorID: floors.first { $0.level == 0 }?.id
+            defaultFloorID: Self.groundFloorID(
+                floors,
+                anchorPlaceID: VenueConfiguration.anchorPlaceID
+            )
         ))
         attachedProvider = provider.name
         await sdk.attachPositionProvider(provider)
     }
 
     /// Engine floor number → Proximi.io floor id. This is how a number in a relay
-    /// message becomes the level the map draws the dot on.
+    /// message becomes the storey the map draws the dot on.
     ///
-    /// SEAM: it assumes the venue's Blueiot engine numbers floors the way Proximi.io
-    /// does, ground = 0. LocalSense deployments are often numbered from 1 instead. If
-    /// yours is, add the offset to `number` here — this is the only place in the app
-    /// where engine floor numbers are translated.
-    static func floorIDsByEngineNumber(_ floors: [ProximiioFloor]) -> [String: String] {
-        floors.reduce(into: [:]) { map, floor in
-            let number = String(Int(floor.level.rounded()))
-            // A multi-building organisation can have two floors at the same level;
-            // the first wins rather than the last, so the map is stable across syncs.
-            if map[number] == nil { map[number] = floor.id }
+    /// THE RULE, in two halves, both of them this venue's and both set in
+    /// `Config/App.xcconfig`:
+    ///
+    /// 1. **The offset.** Proximi.io numbers the ground floor level 0. A Blueiot
+    ///    LocalSense engine numbers it whatever the deployment was configured with,
+    ///    and these deployments usually start at 1 — this one does.
+    ///    `BLUEIOT_GROUND_FLOOR_NO` is that number and the engine floor is
+    ///    `level + groundFloorNumber`, so level 0 is engine floor 1 here. Mapped
+    ///    one-to-one instead, every fix landed a storey too high.
+    ///
+    /// 2. **The anchor place.** One Proximi.io organisation can hold several
+    ///    buildings; this one holds nine, and eight of them have a floor at level 0.
+    ///    `BLUEIOT_ANCHOR_PLACE_ID` names the building this app is deployed in. It
+    ///    wins every storey it has, and the other places only fill numbers it does
+    ///    not — so "engine floor 2" is *this* building's first floor rather than
+    ///    whichever building the sync happened to return first, and a number only
+    ///    another place has still resolves to something rather than to nothing.
+    ///
+    /// A different venue changes those two values and nothing else. An engine that
+    /// numbers from 0 leaves the offset empty and this becomes the identity map; a
+    /// single-building organisation leaves the place id empty and the first floor at
+    /// each level wins, because there is nothing to prefer it over. A number below
+    /// the ground floor (engine 0 when the ground floor is 1) maps to nothing on
+    /// purpose — `defaultFloorID` is a better answer than a wrong floor id.
+    static func floorIDsByEngineNumber(
+        _ floors: [ProximiioFloor],
+        groundFloorNumber: Int,
+        anchorPlaceID: String?
+    ) -> [String: String] {
+        func engineNumber(_ floor: ProximiioFloor) -> String {
+            String(Int(floor.level.rounded()) + groundFloorNumber)
         }
+        var map: [String: String] = [:]
+        if let anchorPlaceID {
+            for floor in floors where floor.placeId == anchorPlaceID {
+                map[engineNumber(floor)] = floor.id
+            }
+        }
+        for floor in floors where map[engineNumber(floor)] == nil {
+            map[engineNumber(floor)] = floor.id
+        }
+        return map
+    }
+
+    /// The storey the dot falls back to when the relay names a number the venue has
+    /// no floor for: the anchor building's ground floor, not whichever level 0 the
+    /// sync listed first.
+    static func groundFloorID(_ floors: [ProximiioFloor], anchorPlaceID: String?) -> String? {
+        let ground = floors.filter { Int($0.level.rounded()) == 0 }
+        guard let anchorPlaceID else { return ground.first?.id }
+        return (ground.first { $0.placeId == anchorPlaceID } ?? ground.first)?.id
     }
 }
