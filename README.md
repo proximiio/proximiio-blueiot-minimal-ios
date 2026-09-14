@@ -11,7 +11,7 @@ comments mark the seams where your own product's code goes.
 ## What it deliberately is NOT
 
 No settings screen. No diagnostics. No staff mode, no engine switches, no event
-log, no offline package, no turn-by-turn UI, no notification prompts, no
+log, no offline package, no step list, no notification prompts, no
 background positioning. Those all exist and are all deliberate omissions — every
 knob is a thing you would have to read, decide about and maintain.
 
@@ -103,6 +103,18 @@ SDK cannot know:
 
 It is the venue's survey rather than a credential, so it is tracked with this
 venue's working value, and it goes away the day the deployment is renumbered.
+
+**Turn-by-turn.** `session.guidanceRules = .venueWalk` in `VenueMapScreen` is the
+whole opt-in. The map library then follows the route it is already drawing and
+republishes `session.guidance` on every fix; the bottom bar shows the turn in
+hand, the metres still to walk to it, and — plainly, once — that the visitor has
+arrived. The instruction sentences are the app's, in `VenueMapScreen.instruction(for:)`,
+because `RouteManoeuvre.Kind` carries no display strings and no library should
+choose a venue's language for it.
+
+Leaving the route is reported, not acted on: `isOffRoute` latches after three
+fixes beyond twelve metres and clears itself on the first fix back inside, so the
+bar says so and this app adds no detector and no re-routing of its own.
 
 **Following the visitor.** The button at the right of the bottom bar recentres
 the map on the wristband. It is one call into the map library's own follow camera

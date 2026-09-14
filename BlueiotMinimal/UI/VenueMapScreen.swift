@@ -2,7 +2,8 @@
 //  VenueMapScreen.swift
 //  BlueiotMinimal
 //
-//  THE APP, ONCE IT KNOWS THE WRISTBAND: a venue map, a search, and a route.
+//  THE APP, ONCE IT KNOWS THE WRISTBAND: a venue map, a search, a route, and the
+//  turn to take next.
 //
 //  Nothing here draws on the map. `ProximiioMapView` owns the venue style, the
 //  floors, the amenities, the blue dot and — given a route — the drawing of it, split
@@ -10,6 +11,8 @@
 //  lines of app: which place the visitor picked, asking the SDK for a route to it,
 //  and handing that route over. The recentre button is a fourth, and it is one call
 //  into the library's own follow camera rather than a camera this app wrote.
+//  Turn-by-turn is a fifth: one line opts in, and the only thing left to the app is
+//  the English the instruction is said in.
 //
 //  Your product's chrome goes in `bottomBar`. Your product's screens go beside this
 //  one.
@@ -64,6 +67,11 @@ struct VenueMapScreen: View {
             bottomBar
         }
         .task {
+            // One line turns turn-by-turn on, and the session follows the route it
+            // is already drawing: which turn is next, how far is left to it, whether
+            // the visitor has walked off it, whether they have arrived. Off by
+            // default, so an app that does not want it writes nothing.
+            session.guidanceRules = .venueWalk
             // A local cache read, not a download: `Venue.start` already fetched it.
             places = VenuePOI.all(in: await venue.sdk.features())
         }
@@ -75,6 +83,37 @@ struct VenueMapScreen: View {
     }
 
     private var bottomBar: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            guidanceLine
+            searchRow
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
+        .padding(16)
+    }
+
+    /// Turn-by-turn, one instruction at a time.
+    ///
+    /// `session.guidance` is a single value republished on every fix, so this reads
+    /// four of its properties and the view re-renders once. It is `nil` until the
+    /// first position after a route is set, and setting a route clears it — which is
+    /// why there is nothing here to reset.
+    ///
+    /// Off-route is a latched state the library reports and clears by itself on the
+    /// first fix back inside the corridor. Saying so is the whole response this app
+    /// has: a detector of its own would only disagree with the one already running,
+    /// and re-routing a single route is a product decision rather than a default.
+    @ViewBuilder private var guidanceLine: some View {
+        if let guidance = session.guidance {
+            Text(Self.line(for: guidance))
+                .font(.subheadline)
+                .lineLimit(1)
+                .accessibilityAddTraits(.updatesFrequently)
+        }
+    }
+
+    private var searchRow: some View {
         HStack(spacing: 8) {
             Button { isSearching = true } label: {
                 HStack(spacing: 10) {
@@ -110,10 +149,39 @@ struct VenueMapScreen: View {
 
             recentreButton
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
-        .padding(16)
+    }
+
+    /// One sentence for one fix, in the order a walker needs them: arrival ends the
+    /// walk, leaving the route interrupts it, and otherwise it is the turn in hand
+    /// and the metres still to walk to it. `distanceToManoeuvreMeters` is the number
+    /// that shrinks — `RouteManoeuvre.legMeters` is the planned length of the leg and
+    /// never moves.
+    private static func line(for guidance: RouteGuidance) -> String {
+        if guidance.hasArrived { return "You have arrived." }
+        if guidance.isOffRoute { return "You have left the route." }
+        let metres = Int(guidance.distanceToManoeuvreMeters.rounded())
+        return "\(instruction(for: guidance.manoeuvre?.kind)) · \(metres) m"
+    }
+
+    /// `RouteManoeuvre.Kind` carries no display strings, and neither does the SDK's
+    /// `RouteInstruction.Kind` underneath it: a library that shipped English would be
+    /// shipping the wrong language to most venues. These sentences are the app's, and
+    /// this is the one function to reach `NSLocalizedString` into.
+    private static func instruction(for kind: RouteManoeuvre.Kind?) -> String {
+        switch kind {
+        case .turnLeft: "Turn left"
+        case .turnSlightLeft: "Bear left"
+        case .turnSharpLeft: "Turn sharp left"
+        case .turnRight: "Turn right"
+        case .turnSlightRight: "Bear right"
+        case .turnSharpRight: "Turn sharp right"
+        // The changer the route actually uses, so the sentence and the pin on the
+        // map name the same thing: "elevator", "escalator", "staircase", "ramp".
+        case .levelChange(let change):
+            "Take the \(change.featureType) to level \(MapLevelFormat.trimmed(change.toLevel))"
+        case .arrive: "Arrive"
+        default: "Continue straight"
+        }
     }
 
     /// "Show me where I am", and nothing else is needed to make it work.
