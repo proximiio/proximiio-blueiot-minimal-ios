@@ -1,0 +1,114 @@
+name: BlueiotMinimal
+options:
+  bundleIdPrefix: io.proximi
+  deploymentTarget:
+    iOS: "17.0"
+  xcodeVersion: "16.0"
+  createIntermediateGroups: true
+  developmentLanguage: en
+
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    DEVELOPMENT_TEAM: 2ULWCJMDBJ
+    CODE_SIGN_STYLE: Automatic
+
+packages:
+  # The Proximi.io iOS SDK, as a CUSTOMER consumes it: the published binary, at an
+  # exact version. `exactVersion:` rather than a range because the map package below
+  # pins this same identity, and two different version requirements on one identity
+  # is a resolution failure. Bump both lines together.
+  #
+  # The binary is one flattened module behind two product names, so `import Proximiio`
+  # brings the whole SDK surface into scope — including the Blueiot cloud-relay client
+  # this app positions from.
+  Proximiio:
+    url: https://github.com/proximiio/proximiio-sdk-ios-binary
+    exactVersion: "6.0.0-beta.36"
+  # The venue map renderer, likewise the published binary. MapLibre arrives THROUGH
+  # this package and must not be declared here: it is a SwiftPM binaryTarget, and two
+  # of them in one graph is a hard resolution failure.
+  ProximiioMap:
+    url: https://github.com/proximiio/proximiio-map-ios-binary
+    exactVersion: "6.0.0-beta.8"
+
+targets:
+  BlueiotMinimal:
+    type: application
+    platform: iOS
+    deploymentTarget: "17.0"
+    configFiles:
+      Debug: Config/App.xcconfig
+      Release: Config/App.xcconfig
+    sources:
+      - path: BlueiotMinimal
+    dependencies:
+      - package: Proximiio
+        product: Proximiio
+      - package: ProximiioMap
+        product: ProximiioMap
+    info:
+      path: BlueiotMinimal/Info.plist
+      properties:
+        CFBundleDisplayName: Venue Map
+        # An empty launch screen is still a launch screen: without the key iOS
+        # letterboxes the app on iPad and Xcode warns. Style it when you brand it.
+        UILaunchScreen: {}
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        # iPad multitasking (App Store validation) wants all four unless
+        # UIRequiresFullScreen is set.
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        # Build-time values from Config/App.xcconfig + the untracked
+        # Config/Secrets.xcconfig, read at runtime by `VenueConfiguration`.
+        # Empty when the secrets file is missing.
+        ProximiioApplicationToken: $(PROXIMIIO_APPLICATION_TOKEN)
+        BlueiotCloudRelayURL: $(BLUEIOT_CLOUD_RELAY_URL)
+        BlueiotCloudRelayToken: $(BLUEIOT_CLOUD_RELAY_TOKEN)
+        # This app never asks for any of these — the venue positions the visitor,
+        # so nothing on the phone is scanned. The strings are here because App Store
+        # validation requires one for every protected API the *linked* SDK binary
+        # references, whether or not this app calls it.
+        NSLocationWhenInUseUsageDescription: Your location can place you on the venue map.
+        NSBluetoothAlwaysUsageDescription: Bluetooth is used by indoor positioning.
+        NSMotionUsageDescription: Motion data smooths the position between updates.
+        NSNearbyInteractionUsageDescription: Ultra-wideband ranging improves indoor positioning accuracy.
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: io.proximi.BlueiotMinimal
+        ENABLE_PREVIEWS: YES
+        SWIFT_STRICT_CONCURRENCY: minimal
+
+  BlueiotMinimalTests:
+    type: bundle.unit-test
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: BlueiotMinimalTests
+    dependencies:
+      - target: BlueiotMinimal
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: io.proximi.BlueiotMinimalTests
+        GENERATE_INFOPLIST_FILE: YES
+
+schemes:
+  BlueiotMinimal:
+    build:
+      targets:
+        BlueiotMinimal: all
+        BlueiotMinimalTests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - BlueiotMinimalTests
+    archive:
+      config: Release
