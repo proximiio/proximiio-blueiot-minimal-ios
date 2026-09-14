@@ -66,7 +66,7 @@ struct JourneyBar: View {
         // whole of "the visit survived the app being closed".
         .onChange(of: navigator.journey) { JourneyStore.save($1) }
         .sheet(isPresented: $isShowingPlan) {
-            JourneyPlanSheet(navigator: navigator, onEnd: onEnd)
+            JourneyPlanSheet(navigator: navigator, places: places, onEnd: onEnd)
         }
     }
 
@@ -87,13 +87,16 @@ struct JourneyBar: View {
                         .lineLimit(1)
                 }
                 Spacer(minLength: 0)
-                Button { isShowingPlan = true } label: { Image(systemName: "list.bullet") }
-                    .accessibilityLabel("The plan")
+                planButton
             }
         } else if navigator.isFinished {
             HStack(spacing: 8) {
                 Text("Your visit is done.")
                 Spacer(minLength: 0)
+                // Adding a stop revives a finished visit — the library makes the new
+                // one active and draws its leg — so the way into the plan, and to the
+                // "+" in it, must not disappear with the last stop.
+                planButton
                 Button("Finish", action: onEnd)
             }
         } else {
@@ -101,6 +104,11 @@ struct JourneyBar: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
+    }
+
+    private var planButton: some View {
+        Button { isShowingPlan = true } label: { Image(systemName: "list.bullet") }
+            .accessibilityLabel("The plan")
     }
 
     private var remaining: String {
@@ -182,10 +190,14 @@ struct JourneyBar: View {
 /// The plan itself: what is left, in what order, and the two ways to change it.
 struct JourneyPlanSheet: View {
     @ObservedObject var navigator: JourneyNavigator
+    let places: [VenuePOI]
     let onEnd: () -> Void
 
     @State private var proposal: JourneyOrderProposal?
     @State private var showsWholePlan = false
+    @State private var isAdding = false
+    /// What the last "+" could not add. Said once, and replaced by the next one.
+    @State private var note: String?
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -202,6 +214,10 @@ struct JourneyPlanSheet: View {
                     } footer: {
                         Text("Measured, not applied. Nothing moves until you tap it, and the stop you are walking to stays where it is.")
                     }
+                }
+
+                if let note {
+                    Section { Text(note).font(.caption).foregroundStyle(.secondary) }
                 }
 
                 Section("Still to walk") {
@@ -234,7 +250,30 @@ struct JourneyPlanSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) { EditButton() }
+                ToolbarItem(placement: .primaryAction) {
+                    Button { isAdding = true } label: { Image(systemName: "plus") }
+                        .disabled(places.isEmpty)
+                        .accessibilityLabel("Add places")
+                }
                 ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
+            }
+            // The same search sheet the visit was planned in. `add` puts each pick
+            // after everything still to be walked, leaving the leg in hand alone, and
+            // answers `false` for one the plan already holds — which is said rather
+            // than dropped, because a place that did not appear is a bug from here.
+            .sheet(isPresented: $isAdding) {
+                POISearchSheet(pois: places, allowsMultiple: true, adds: true) { picked in
+                    Task {
+                        var already: [String] = []
+                        for poi in picked {
+                            if await navigator.add(JourneyStop(poi)) { continue }
+                            already.append(poi.title)
+                        }
+                        note = already.isEmpty
+                            ? nil
+                            : "Already in your visit: \(already.joined(separator: ", "))."
+                    }
+                }
             }
             // Measures every walk between the remaining stops and returns a value;
             // it never applies itself. Re-measured whenever those stops change,

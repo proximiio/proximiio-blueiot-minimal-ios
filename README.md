@@ -1,9 +1,10 @@
 # Proximi.io Blueiot — minimal reference app
 
-A complete venue app in 1235 lines of Swift across eleven files. It asks
+A complete venue app in 1266 lines of Swift across eleven files. It asks
 for the visitor's wristband number once, shows the venue map, searches the
 venue's places, routes to the one they pick, says which turn to take next, and
-walks a whole afternoon of them in order. The visitor is positioned by the
+walks a whole afternoon of them in order — added to, reordered and detoured from
+as the afternoon goes. The visitor is positioned by the
 venue's own Blueiot anchors, through the Proximi.io cloud relay — the phone scans
 nothing.
 
@@ -81,7 +82,7 @@ package paths.
 | `UI/VenueMapScreen.swift` | Map, search button, route, and where a visit starts |
 | `UI/POISearchSheet.swift` | The search list — one place, or several |
 | `UI/GuidanceLine.swift` | The turn-by-turn sentence, in this app's English |
-| `UI/JourneyBar.swift` | The visit: the stop in hand, the plan, detours, reordering |
+| `UI/JourneyBar.swift` | The visit: the stop in hand, the plan, adding to it, detours, reordering |
 
 ## Two things worth knowing before you change anything
 
@@ -131,16 +132,27 @@ do.
 The bar shows the stop in hand, what is left (`overview.remainingMeters`, its
 ETA, and any leg routing refused), and **Continue** when the visitor has arrived.
 Arrival does not advance on its own: somebody stands in front of an exhibit for a
-length of time nobody can guess, so the rule is `.manual`. The plan sheet is
-drag-to-reorder, and it will offer a shorter order — measured, with the metres it
-saves — but the library never applies one and neither does the sheet; a tap does.
-"Stop off" is a detour, and which kinds of place a venue has is read off the
-venue's own amenity tags rather than from a list of categories in this app.
+length of time nobody can guess, so the rule is `.manual`.
+
+**Your visit** — the list button on the bar — is where the plan is changed, and
+it does four things:
+
+| | |
+| --- | --- |
+| **+** | Opens the same multi-select search the visit was planned in, and `JourneyNavigator.add` puts each pick after everything still to be walked. The leg in hand is left alone. A place the plan already holds is named on the sheet rather than dropped without a word. The **+** is there when the visit is done too: adding revives it, and the new stop becomes the one being walked to |
+| **Drag** | Reorders what is still ahead. The rows *are* `JourneyNavigator.reorderableStops` — the array `move(stopID:toIndex:)` indexes into — so the app holds no second copy of which stops may move |
+| **Save N m by reordering** | A shorter order, measured. The library never applies one and neither does the sheet; a tap does. It is re-measured whenever the stops change, because `apply` ignores a proposal that no longer describes the journey |
+| **Show the whole plan on the map** | Draws the rest of the afternoon under the leg in hand. Off by default |
+
+"Stop off" is a detour. Which kinds of place a venue has is read off the venue's
+own amenity tags rather than from a list of categories in this app, and what each
+kind is *called* comes from the SDK's amenity store — `amenities()` once per
+install, then `amenity(id:)`, which is a local row read. The app keeps no titles
+of its own, so an amenity renamed on the server is renamed here without a release.
 
 The visit is written to `UserDefaults` whenever it changes and restored on
 launch, so an afternoon survives the app being closed — `Journey` is `Codable`
-and each stop carries its own state. Drawing the whole plan under the leg in hand
-is a toggle in the plan sheet, off by default.
+and each stop carries its own state.
 
 **Following the visitor.** The button at the right of the bottom bar recentres
 the map on the wristband. It is one call into the map library's own follow camera

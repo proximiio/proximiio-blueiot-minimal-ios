@@ -22,6 +22,9 @@ struct POISearchSheet: View {
     /// Several places instead of one, in the order they are tapped, because that
     /// order is the order the visitor walks.
     var allowsMultiple = false
+    /// Adding to a visit that is already running rather than planning a new one.
+    /// Same list, same multi-select, the words that screen needs.
+    var adds = false
     let onPick: ([VenuePOI]) -> Void
 
     @State private var query = ""
@@ -61,12 +64,12 @@ struct POISearchSheet: View {
                 }
             }
             .searchable(text: $query, prompt: "Search places")
-            .navigationTitle(allowsMultiple ? "Plan a visit" : "Where to?")
+            .navigationTitle(allowsMultiple ? (adds ? "Add to your visit" : "Plan a visit") : "Where to?")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 if allowsMultiple {
                     ToolbarItem(placement: .confirmationAction) {
-                        Button("Start") {
+                        Button(adds ? "Add" : "Start") {
                             onPick(picked)
                             dismiss()
                         }
