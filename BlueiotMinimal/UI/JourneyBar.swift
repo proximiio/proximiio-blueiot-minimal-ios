@@ -23,9 +23,9 @@ struct JourneyBar: View {
     let onEnd: () -> Void
 
     @StateObject private var navigator: JourneyNavigator
-    /// Titles for the amenity ids the venue's POIs carry, so a detour can offer
-    /// "Toilet" rather than a uuid. Empty until they load, and empty is survivable.
-    @State private var amenityTitles: [String: String] = [:]
+    /// The detours on offer, named. Rebuilt only when the set of nearest places
+    /// changes; empty is survivable and shows no button.
+    @State private var detours: [Detour] = []
     @State private var isShowingPlan = false
 
     @MainActor
@@ -54,15 +54,13 @@ struct JourneyBar: View {
             // Starting is one call. Nothing is drawn until the first fix, because the
             // leg is computed from where the visitor actually is.
             await navigator.start()
-            // The one extra download in the app, and only for a visitor who started a
-            // visit: the amenity titles behind the detour button. Failing it costs
-            // the detours and nothing else.
-            let amenities = (try? await navigator.session.sdk.amenities()) ?? []
-            amenityTitles = Dictionary(
-                amenities.compactMap { amenity in amenity.title.map { (amenity.id, $0) } },
-                uniquingKeysWith: { first, _ in first }
-            )
+            // The one extra download in the app, and only for a visitor who started
+            // a visit. Store-first: with a catalogue stored it reaches no network and
+            // cannot throw, and failing it costs the detours and nothing else.
+            _ = try? await navigator.session.sdk.amenities()
+            detours = await offers()
         }
+        .task(id: navigator.session.position?.coordinate) { detours = await offers() }
         .onDisappear { navigator.end() }
         // `Journey` is Codable and carries each stop's state, so this one line is the
         // whole of "the visit survived the app being closed".
@@ -144,15 +142,10 @@ struct JourneyBar: View {
     /// "Something else first." `detour(to:)` puts a stop in front of the one being
     /// walked to and routes there now; the plan resumes afterwards from wherever the
     /// visitor ends up, not from where they stepped out.
-    ///
-    /// Which kinds of place a venue has is the app's question — see
-    /// ``VenuePOI/nearestByAmenity(in:from:)``, which reads them off the venue's own
-    /// data. A venue that tags nothing shows no button at all.
     @ViewBuilder private var detourMenu: some View {
-        let offers = detours
-        if !offers.isEmpty {
+        if !detours.isEmpty {
             Menu("Stop off") {
-                ForEach(offers) { offer in
+                ForEach(detours) { offer in
                     Button(offer.title) {
                         Task { await navigator.detour(to: JourneyStop(offer.poi)) }
                     }
@@ -167,19 +160,22 @@ struct JourneyBar: View {
         let poi: VenuePOI
     }
 
-    private var detours: [Detour] {
+    /// WHICH kinds of place a venue has is the app's question —
+    /// ``VenuePOI/nearestByAmenity(in:from:)`` reads them off the venue's own data.
+    /// WHAT each kind is called is the SDK's: one stored row per amenity id, local
+    /// and offline. An id the catalogue cannot name is left out rather than shown as
+    /// a uuid, and this app keeps no titles of its own.
+    private func offers() async -> [Detour] {
         guard let here = navigator.session.position else { return [] }
-        return VenuePOI.nearestByAmenity(
-            in: places,
-            from: ProximiioCoordinate(
-                latitude: here.coordinate.latitude,
-                longitude: here.coordinate.longitude
-            )
-        )
-        .compactMap { amenityID, poi in
-            amenityTitles[amenityID].map { Detour(id: amenityID, title: $0, poi: poi) }
+        var detours: [Detour] = []
+        for (amenityID, poi) in VenuePOI.nearestByAmenity(in: places, from: ProximiioCoordinate(
+            latitude: here.coordinate.latitude,
+            longitude: here.coordinate.longitude
+        )) {
+            guard let title = await navigator.session.sdk.amenity(id: amenityID)?.title else { continue }
+            detours.append(Detour(id: amenityID, title: title, poi: poi))
         }
-        .sorted { $0.title.localizedStandardCompare($1.title) == .orderedAscending }
+        return detours.sorted { $0.title.localizedStandardCompare($1.title) == .orderedAscending }
     }
 }
 
