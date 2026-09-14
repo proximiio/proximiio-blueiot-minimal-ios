@@ -205,7 +205,7 @@ struct JourneyPlanSheet: View {
                 }
 
                 Section("Still to walk") {
-                    ForEach(reorderable) { stop in
+                    ForEach(navigator.reorderableStops) { stop in
                         row(stop)
                     }
                     .onMove(perform: move)
@@ -236,24 +236,17 @@ struct JourneyPlanSheet: View {
                 ToolbarItem(placement: .navigationBarLeading) { EditButton() }
                 ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
             }
-            .task {
-                // Measures every walk between the remaining stops and returns a
-                // value. It never applies itself.
+            // Measures every walk between the remaining stops and returns a value;
+            // it never applies itself. Re-measured whenever those stops change,
+            // because a proposal describes the order it was measured against and
+            // `apply` ignores one that no longer does — a button that silently does
+            // nothing is worse than no button.
+            .task(id: navigator.reorderableStops.map(\.id)) {
                 proposal = await navigator.proposeOrder()
             }
             .onChange(of: showsWholePlan) {
                 navigator.session.journeyOverlayStyle = $1 ? .venue : nil
             }
-        }
-    }
-
-    /// The stops `move(stopID:toIndex:)` indexes into: what is still ahead, with a
-    /// live detour left out because a detour is "now" rather than a place in the
-    /// queue. Everything already walked, skipped or stood at holds its place.
-    private var reorderable: [JourneyStop] {
-        navigator.journey.stops.filter { stop in
-            guard stop.state == .pending || stop.state == .active else { return false }
-            return !(stop.state == .active && stop.kind == .detour)
         }
     }
 
@@ -287,7 +280,7 @@ struct JourneyPlanSheet: View {
 
     private func move(from source: IndexSet, to destination: Int) {
         guard let first = source.first else { return }
-        let stops = reorderable
+        let stops = navigator.reorderableStops
         guard first < stops.count else { return }
         // `onMove` gives the insertion point in the list before the row is taken out;
         // `move(stopID:toIndex:)` wants the index it ends up at.
