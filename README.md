@@ -1,9 +1,11 @@
 # Proximi.io Blueiot — minimal reference app
 
-A complete venue app in 733 lines of Swift across eight files. It asks for the
-visitor's wristband number once, shows the venue map, searches the venue's places
-and routes to the one they pick. The visitor is positioned by the venue's own
-Blueiot anchors, through the Proximi.io cloud relay — the phone scans nothing.
+A complete venue app in 1235 lines of Swift across eleven files. It asks
+for the visitor's wristband number once, shows the venue map, searches the
+venue's places, routes to the one they pick, says which turn to take next, and
+walks a whole afternoon of them in order. The visitor is positioned by the
+venue's own Blueiot anchors, through the Proximi.io cloud relay — the phone scans
+nothing.
 
 It exists to be read. Every file is short enough to read in one sitting, and the
 comments mark the seams where your own product's code goes.
@@ -12,7 +14,7 @@ comments mark the seams where your own product's code goes.
 
 No settings screen. No diagnostics. No staff mode, no engine switches, no event
 log, no offline package, no step list, no notification prompts, no
-background positioning. Those all exist and are all deliberate omissions — every
+background positioning. Nothing reorders a visit on its own. Those all exist and are all deliberate omissions — every
 knob is a thing you would have to read, decide about and maintain.
 
 If you want an instrument that shows all of them at once, that is the full demo
@@ -75,8 +77,11 @@ package paths.
 | `Venue/Venue.swift` | Starting the SDK and attaching the cloud relay to one band |
 | `Venue/VenuePOI.swift` | Turning the venue's features into searchable places |
 | `UI/WristbandPrompt.swift` | The only thing the app asks a person for |
-| `UI/VenueMapScreen.swift` | Map, search button, route |
-| `UI/POISearchSheet.swift` | The search list |
+| `Venue/JourneyStore.swift` | Keeping a visit across launches, and turning a picked place into a stop |
+| `UI/VenueMapScreen.swift` | Map, search button, route, and where a visit starts |
+| `UI/POISearchSheet.swift` | The search list — one place, or several |
+| `UI/GuidanceLine.swift` | The turn-by-turn sentence, in this app's English |
+| `UI/JourneyBar.swift` | The visit: the stop in hand, the plan, detours, reordering |
 
 ## Two things worth knowing before you change anything
 
@@ -116,6 +121,27 @@ Leaving the route is reported, not acted on: `isOffRoute` latches after three
 fixes beyond twelve metres and clears itself on the first fix back inside, so the
 bar says so and this app adds no detector and no re-routing of its own.
 
+**A visit.** The list button next to the search opens the same search sheet in
+multi-select; the places tapped, in that order, become a `Journey`. From there
+`JourneyNavigator` owns every route computation in the walk — it draws and
+follows one leg at a time through the same session the map is already using, and
+re-routes a leg by itself when the visitor wanders, which a single route does not
+do.
+
+The bar shows the stop in hand, what is left (`overview.remainingMeters`, its
+ETA, and any leg routing refused), and **Continue** when the visitor has arrived.
+Arrival does not advance on its own: somebody stands in front of an exhibit for a
+length of time nobody can guess, so the rule is `.manual`. The plan sheet is
+drag-to-reorder, and it will offer a shorter order — measured, with the metres it
+saves — but the library never applies one and neither does the sheet; a tap does.
+"Stop off" is a detour, and which kinds of place a venue has is read off the
+venue's own amenity tags rather than from a list of categories in this app.
+
+The visit is written to `UserDefaults` whenever it changes and restored on
+launch, so an afternoon survives the app being closed — `Journey` is `Codable`
+and each stop carries its own state. Drawing the whole plan under the leg in hand
+is a toggle in the plan sheet, off by default.
+
 **Following the visitor.** The button at the right of the bottom bar recentres
 the map on the wristband. It is one call into the map library's own follow camera
 (`ProximiioMapSession.recentre()` plus `followMyFloor()`) — this app writes no
@@ -130,7 +156,10 @@ xcodebuild -project BlueiotMinimal.xcodeproj -scheme BlueiotMinimal \
   -destination 'platform=iOS Simulator,name=iPhone 17' test
 ```
 
-Nine of them, all on `WristbandID` and its store. They are there because a
-wristband read one way by the app and another way by the relay does not error —
-it matches nothing, and the symptom is a dot that never arrives. The screens are
-not tested; they have no logic to get wrong.
+Seventeen of them, and all three subjects are chosen for the same reason: they
+fail without anything on screen looking wrong. A wristband read one way by the
+app and another way by the relay matches nothing, and the symptom is a dot that
+never arrives. A visit that does not survive a launch loses a visitor's afternoon
+in silence. An amenity query that reads the venue's data wrongly makes a venue
+with toilets look like a venue without any. The screens are not tested; a layout
+that is wrong is a layout you can see.

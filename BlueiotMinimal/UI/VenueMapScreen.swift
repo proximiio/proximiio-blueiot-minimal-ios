@@ -34,6 +34,10 @@ struct VenueMapScreen: View {
     @State private var destination: VenuePOI?
     @State private var note: String?
     @State private var isSearching = false
+    /// The visit in progress, restored from disk on the first body evaluation. `nil`
+    /// is the ordinary state of this app: a search bar and one destination.
+    @State private var journey: Journey? = JourneyStore.load()
+    @State private var isPlanningVisit = false
 
     @MainActor
     init(venue: Venue, onChangeWristband: @escaping () -> Void) {
@@ -64,7 +68,13 @@ struct VenueMapScreen: View {
                         .onEnded { _ in onChangeWristband() }
                 )
 
-            bottomBar
+            if let journey {
+                // The journey drives the same session the map is already using, so
+                // there is one map, one camera and one drawn route either way.
+                JourneyBar(session: session, journey: journey, places: places, onEnd: endVisit)
+            } else {
+                bottomBar
+            }
         }
         .task {
             // One line turns turn-by-turn on, and the session follows the route it
@@ -76,41 +86,33 @@ struct VenueMapScreen: View {
             places = VenuePOI.all(in: await venue.sdk.features())
         }
         .sheet(isPresented: $isSearching) {
-            POISearchSheet(pois: places) { place in
+            POISearchSheet(pois: places) { picked in
+                guard let place = picked.first else { return }
                 Task { await route(to: place) }
+            }
+        }
+        .sheet(isPresented: $isPlanningVisit) {
+            // The same search, in the same file, picking several places instead of
+            // one. The order they are tapped is the order they are walked.
+            POISearchSheet(pois: places, allowsMultiple: true) { picked in
+                guard !picked.isEmpty else { return }
+                session.clearRoute()
+                destination = nil
+                note = nil
+                journey = Journey(stops: picked.map(JourneyStop.init))
             }
         }
     }
 
     private var bottomBar: some View {
         VStack(alignment: .leading, spacing: 10) {
-            guidanceLine
+            GuidanceLine(guidance: session.guidance)
             searchRow
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
         .padding(16)
-    }
-
-    /// Turn-by-turn, one instruction at a time.
-    ///
-    /// `session.guidance` is a single value republished on every fix, so this reads
-    /// four of its properties and the view re-renders once. It is `nil` until the
-    /// first position after a route is set, and setting a route clears it — which is
-    /// why there is nothing here to reset.
-    ///
-    /// Off-route is a latched state the library reports and clears by itself on the
-    /// first fix back inside the corridor. Saying so is the whole response this app
-    /// has: a detector of its own would only disagree with the one already running,
-    /// and re-routing a single route is a product decision rather than a default.
-    @ViewBuilder private var guidanceLine: some View {
-        if let guidance = session.guidance {
-            Text(Self.line(for: guidance))
-                .font(.subheadline)
-                .lineLimit(1)
-                .accessibilityAddTraits(.updatesFrequently)
-        }
     }
 
     private var searchRow: some View {
@@ -147,41 +149,27 @@ struct VenueMapScreen: View {
                 .accessibilityLabel("Clear route")
             }
 
+            visitButton
             recentreButton
         }
     }
 
-    /// One sentence for one fix, in the order a walker needs them: arrival ends the
-    /// walk, leaving the route interrupts it, and otherwise it is the turn in hand
-    /// and the metres still to walk to it. `distanceToManoeuvreMeters` is the number
-    /// that shrinks — `RouteManoeuvre.legMeters` is the planned length of the leg and
-    /// never moves.
-    private static func line(for guidance: RouteGuidance) -> String {
-        if guidance.hasArrived { return "You have arrived." }
-        if guidance.isOffRoute { return "You have left the route." }
-        let metres = Int(guidance.distanceToManoeuvreMeters.rounded())
-        return "\(instruction(for: guidance.manoeuvre?.kind)) · \(metres) m"
+    /// Several places instead of one. Hidden while a visit is running, because
+    /// `JourneyBar` takes this bar's place then.
+    private var visitButton: some View {
+        Button { isPlanningVisit = true } label: { Image(systemName: "list.bullet") }
+            .disabled(places.isEmpty)
+            .accessibilityLabel("Plan a visit")
     }
 
-    /// `RouteManoeuvre.Kind` carries no display strings, and neither does the SDK's
-    /// `RouteInstruction.Kind` underneath it: a library that shipped English would be
-    /// shipping the wrong language to most venues. These sentences are the app's, and
-    /// this is the one function to reach `NSLocalizedString` into.
-    private static func instruction(for kind: RouteManoeuvre.Kind?) -> String {
-        switch kind {
-        case .turnLeft: "Turn left"
-        case .turnSlightLeft: "Bear left"
-        case .turnSharpLeft: "Turn sharp left"
-        case .turnRight: "Turn right"
-        case .turnSlightRight: "Bear right"
-        case .turnSharpRight: "Turn sharp right"
-        // The changer the route actually uses, so the sentence and the pin on the
-        // map name the same thing: "elevator", "escalator", "staircase", "ramp".
-        case .levelChange(let change):
-            "Take the \(change.featureType) to level \(MapLevelFormat.trimmed(change.toLevel))"
-        case .arrive: "Arrive"
-        default: "Continue straight"
-        }
+    /// `JourneyNavigator.end()` hands the session back: it clears the route, the
+    /// journey overlay and — because a journey owns guidance while it runs —
+    /// `guidanceRules`. Turning guidance back on is what returns this screen to the
+    /// single-route behaviour it had before the visit started.
+    private func endVisit() {
+        journey = nil
+        JourneyStore.save(nil)
+        session.guidanceRules = .venueWalk
     }
 
     /// "Show me where I am", and nothing else is needed to make it work.
