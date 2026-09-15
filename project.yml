@@ -74,11 +74,23 @@ targets:
         # The venue's survey rather than its credentials — see Config/App.xcconfig,
         # which carries this venue's working value in the tracked file.
         BlueiotGroundFloorNo: $(BLUEIOT_GROUND_FLOOR_NO)
-        # This app never asks for any of these — the venue positions the visitor,
-        # so nothing on the phone is scanned. The strings are here because App Store
-        # validation requires one for every protected API the *linked* SDK binary
-        # references, whether or not this app calls it.
-        NSLocationWhenInUseUsageDescription: Your location can place you on the venue map.
+        # `location` is what lets the process keep running once the app leaves the
+        # screen — the whole reason positioning survives a lock. The SDK sets
+        # `allowsBackgroundLocationUpdates` (`relayOnly(token:runsInBackground:)`,
+        # see Venue.swift) and iOS honours it only with this mode declared; without
+        # it the app is suspended 30 s after backgrounding and the relay socket
+        # dies with it. THIS FILE IS THE SOURCE OF TRUTH — BlueiotMinimal/Info.plist
+        # is generated, and every `xcodegen generate` rewrites it.
+        UIBackgroundModes:
+          - location
+        # Location is the one permission this app asks for (`LocationPrompt`), and
+        # "While Using the App" is all it asks: with the mode above, that is enough
+        # to keep running off screen, so the string describes the background use
+        # honestly rather than promising more. The other three are never asked for
+        # — the venue positions the visitor, so nothing on the phone is scanned —
+        # and are here because App Store validation requires a string for every
+        # protected API the *linked* SDK binary references.
+        NSLocationWhenInUseUsageDescription: Keeps your position updating while the app is in your pocket or the screen is locked, so the venue can go on placing you on the map. Your position comes from the venue's anchors, not from this phone.
         NSBluetoothAlwaysUsageDescription: Bluetooth is used by indoor positioning.
         NSMotionUsageDescription: Motion data smooths the position between updates.
         NSNearbyInteractionUsageDescription: Ultra-wideband ranging improves indoor positioning accuracy.

@@ -2,12 +2,15 @@
 //  BlueiotMinimalApp.swift
 //  BlueiotMinimal
 //
-//  THE WHOLE APP, IN ORDER: ask for the wristband, start the SDK, show the map.
+//  THE WHOLE APP, IN ORDER: ask for the wristband, ask for location, start the
+//  SDK, show the map.
 //
 //  Nothing else happens at this level. There is no tab bar, no onboarding flow and
-//  no settings — a visitor is handed a band, types the number on it once, and is on
-//  the map. Your product's screens go where `VenueMapScreen` is built.
+//  no settings — a visitor is handed a band, types the number on it once, answers
+//  one location prompt, and is on the map. Your product's screens go where
+//  `VenueMapScreen` is built.
 //
+import CoreLocation
 import SwiftUI
 
 @main
@@ -17,11 +20,15 @@ struct BlueiotMinimalApp: App {
     }
 }
 
-/// First run asks for the wristband; every run after that goes straight to the map.
+/// First run asks for the wristband, then for location; every run after that goes
+/// straight to the map.
 struct RootView: View {
     /// Read from the store on the first body evaluation, so a returning visitor
     /// never sees the prompt.
     @State private var wristband = WristbandStore.load()
+    /// Likewise read once: iOS remembers the answer, so this is `true` exactly
+    /// until the first time `LocationPrompt` is answered.
+    @State private var owesLocationAsk = LocationPrompt.isOwed(CLLocationManager().authorizationStatus)
     @State private var venue: Venue?
     @State private var failure: String?
     @State private var isChangingWristband = false
@@ -30,6 +37,8 @@ struct RootView: View {
         Group {
             if wristband == nil {
                 WristbandPrompt(onSave: save)
+            } else if owesLocationAsk {
+                LocationPrompt { owesLocationAsk = false }
             } else if let venue {
                 VenueMapScreen(venue: venue) { isChangingWristband = true }
             } else if let failure {
@@ -44,8 +53,10 @@ struct RootView: View {
         }
         // Keyed on the wristband: saving a different one re-runs this, and
         // `connect()` re-points positioning at the new band without restarting
-        // the SDK or rebuilding the map.
-        .task(id: wristband) { await connect() }
+        // the SDK or rebuilding the map. Held at `nil` while the location ask is
+        // on screen, so the SDK — and the system prompt it raises — starts only
+        // once that screen has been answered.
+        .task(id: owesLocationAsk ? nil : wristband) { await connect() }
         .sheet(isPresented: $isChangingWristband) {
             WristbandPrompt(
                 current: wristband?.canonical ?? "",

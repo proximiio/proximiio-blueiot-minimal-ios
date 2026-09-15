@@ -29,7 +29,7 @@
 	<key>NSBluetoothAlwaysUsageDescription</key>
 	<string>Bluetooth is used by indoor positioning.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Your location can place you on the venue map.</string>
+	<string>Keeps your position updating while the app is in your pocket or the screen is locked, so the venue can go on placing you on the map. Your position comes from the venue's anchors, not from this phone.</string>
 	<key>NSMotionUsageDescription</key>
 	<string>Motion data smooths the position between updates.</string>
 	<key>NSNearbyInteractionUsageDescription</key>
@@ -41,6 +41,10 @@
 		<key>UIApplicationSupportsMultipleScenes</key>
 		<false/>
 	</dict>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>location</string>
+	</array>
 	<key>UILaunchScreen</key>
 	<dict/>
 	<key>UISupportedInterfaceOrientations</key>

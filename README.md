@@ -1,12 +1,12 @@
 # Proximi.io Blueiot — minimal reference app
 
-A complete venue app in 1266 lines of Swift across eleven files. It asks
+A complete venue app in 1334 lines of Swift across twelve files. It asks
 for the visitor's wristband number once, shows the venue map, searches the
 venue's places, routes to the one they pick, says which turn to take next, and
 walks a whole afternoon of them in order — added to, reordered and detoured from
-as the afternoon goes. The visitor is positioned by the
-venue's own Blueiot anchors, through the Proximi.io cloud relay — the phone scans
-nothing.
+as the afternoon goes, with the phone in a pocket as often as not. The visitor is
+positioned by the venue's own Blueiot anchors, through the Proximi.io cloud relay
+— the phone scans nothing.
 
 It exists to be read. Every file is short enough to read in one sitting, and the
 comments mark the seams where your own product's code goes.
@@ -14,17 +14,17 @@ comments mark the seams where your own product's code goes.
 ## What it deliberately is NOT
 
 No settings screen. No diagnostics. No staff mode, no engine switches, no event
-log, no offline package, no step list, no notification prompts, no
-background positioning. Nothing reorders a visit on its own. Those all exist and are all deliberate omissions — every
+log, no offline package, no step list, no notification prompts. Nothing reorders
+a visit on its own. Those all exist and are all deliberate omissions — every
 knob is a thing you would have to read, decide about and maintain.
 
 If you want an instrument that shows all of them at once, that is the full demo
 app (`proximiio-blueiot-ios`), which is a field-debugging tool for the Proximi.io
 team rather than a starting point for a product.
 
-Foreground only. Positioning stops when the app is backgrounded; the SDK supports
-keeping it alive (`ProximiioConfiguration.relayOnly(token:runsInBackground:)` plus
-the `location` background mode), and this app deliberately does not.
+Positioning does carry on with the phone in a pocket or the screen locked. What
+that asks of a visitor is one location prompt; what it asks of you is under
+**In a pocket** below.
 
 ## Fill in the configuration
 
@@ -72,12 +72,13 @@ package paths.
 
 | File | What it owns |
 | --- | --- |
-| `App/BlueiotMinimalApp.swift` | The order of things: wristband → SDK → map |
+| `App/BlueiotMinimalApp.swift` | The order of things: wristband → location → SDK → map |
 | `App/VenueConfiguration.swift` | The three build-time values |
 | `Venue/WristbandID.swift` | The one spelling rule for a band id, and where it is stored |
 | `Venue/Venue.swift` | Starting the SDK and attaching the cloud relay to one band |
 | `Venue/VenuePOI.swift` | Turning the venue's features into searchable places |
-| `UI/WristbandPrompt.swift` | The only thing the app asks a person for |
+| `UI/WristbandPrompt.swift` | The first thing the app asks a person for |
+| `UI/LocationPrompt.swift` | The other one, and the rule for when it is shown |
 | `Venue/JourneyStore.swift` | Keeping a visit across launches, and turning a picked place into a stop |
 | `UI/VenueMapScreen.swift` | Map, search button, route, and where a visit starts |
 | `UI/POISearchSheet.swift` | The search list — one place, or several |
@@ -109,6 +110,25 @@ SDK cannot know:
 
 It is the venue's survey rather than a credential, so it is tracked with this
 venue's working value, and it goes away the day the deployment is renumbered.
+
+**In a pocket.** Positioning carries on when the screen locks, and it takes four
+things — all four, because each one missing looks the same: the dot stops 30
+seconds after backgrounding, as if the relay had died. Two are code, in
+`Venue.swift`: `relayOnly(token:runsInBackground: true)` for the SDK, and
+`runsInBackground: true` on the relay provider's configuration, without which the
+SDK pauses the provider on its own. Two are in `project.yml` and must survive your
+edits: `UIBackgroundModes: [location]`, which is what lets iOS keep the process
+running off screen, and `NSLocationWhenInUseUsageDescription`, the sentence iOS
+shows when the app asks. `Info.plist` is generated from that file, so change them
+there or lose them on the next `xcodegen generate`.
+
+The fourth is the visitor's: with location never granted, CoreLocation runs no
+session and iOS suspends the app at its 30-second grace period — so
+`LocationPrompt` asks once, between the wristband and the map, and iOS's own
+prompt follows. *While Using the App* is all it needs; nothing asks for Always. A
+refusal is not asked about again, and the map still works on screen. The phone's
+location never enters the position — the venue's anchors place the wristband; the
+location session is only what keeps the process scheduled.
 
 **Turn-by-turn.** `session.guidanceRules = .venueWalk` in `VenueMapScreen` is the
 whole opt-in. The map library then follows the route it is already drawing and
@@ -168,10 +188,12 @@ xcodebuild -project BlueiotMinimal.xcodeproj -scheme BlueiotMinimal \
   -destination 'platform=iOS Simulator,name=iPhone 17' test
 ```
 
-Seventeen of them, and all three subjects are chosen for the same reason: they
+Nineteen of them, and all four subjects are chosen for the same reason: they
 fail without anything on screen looking wrong. A wristband read one way by the
 app and another way by the relay matches nothing, and the symptom is a dot that
 never arrives. A visit that does not survive a launch loses a visitor's afternoon
 in silence. An amenity query that reads the venue's data wrongly makes a venue
-with toilets look like a venue without any. The screens are not tested; a layout
-that is wrong is a layout you can see.
+with toilets look like a venue without any. A background flag left at its default,
+or a location ask that nags or never fires, stops the dot thirty seconds after the
+screen locks. The screens are not tested; a layout that is wrong is a layout you
+can see.
