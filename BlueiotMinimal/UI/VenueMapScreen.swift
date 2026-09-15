@@ -52,6 +52,9 @@ struct VenueMapScreen: View {
                 // Draw a route whenever one is set, and clear it when one is not.
                 route: .automatic
             )
+            // No attribution ⓘ, MapLibre logo or compass over the map. The credits the
+            // ⓘ presented are this app's to show now: `ProximiioMapSession.attributions`.
+            .with(chrome: .bare)
         ))
     }
 
