@@ -23,8 +23,10 @@ import SwiftUI
 
 struct VenueMapScreen: View {
     let venue: Venue
-    /// Presented by `RootView`; see the long press below for why it exists.
-    let onChangeWristband: () -> Void
+    /// The band being followed, and what to do with a different one. The sheet that
+    /// asks is behind the long press below, and lists the map's credits with it.
+    let wristband: String
+    let onSaveWristband: (WristbandID) -> Void
 
     /// The map session, named here rather than left to `ProximiioMapView(sdk:)`,
     /// because naming it is what gives this screen something to call `setRoute` on.
@@ -38,11 +40,13 @@ struct VenueMapScreen: View {
     /// is the ordinary state of this app: a search bar and one destination.
     @State private var journey: Journey? = JourneyStore.load()
     @State private var isPlanningVisit = false
+    @State private var isChangingWristband = false
 
     @MainActor
-    init(venue: Venue, onChangeWristband: @escaping () -> Void) {
+    init(venue: Venue, wristband: String, onSaveWristband: @escaping (WristbandID) -> Void) {
         self.venue = venue
-        self.onChangeWristband = onChangeWristband
+        self.wristband = wristband
+        self.onSaveWristband = onSaveWristband
         _session = StateObject(wrappedValue: ProximiioMapSession(
             sdk: venue.sdk,
             options: MapOptions(
@@ -53,7 +57,7 @@ struct VenueMapScreen: View {
                 route: .automatic
             )
             // No attribution ⓘ, MapLibre logo or compass over the map. The credits the
-            // ⓘ presented are this app's to show now: `ProximiioMapSession.attributions`.
+            // ⓘ presented are this app's to show now; the long-press sheet lists them.
             .with(chrome: .bare)
         ))
     }
@@ -68,7 +72,7 @@ struct VenueMapScreen: View {
                 // and never needs this; staff are told about it once.
                 .simultaneousGesture(
                     LongPressGesture(minimumDuration: 1.5)
-                        .onEnded { _ in onChangeWristband() }
+                        .onEnded { _ in isChangingWristband = true }
                 )
 
             if let journey {
@@ -104,6 +108,16 @@ struct VenueMapScreen: View {
                 note = nil
                 journey = Journey(stops: picked.map(JourneyStop.init))
             }
+        }
+        .sheet(isPresented: $isChangingWristband) {
+            // Read, not stored: this body re-evaluates whenever the session publishes,
+            // so the sheet lists what the loaded style declares.
+            WristbandPrompt(
+                current: wristband,
+                credits: session.attributions,
+                onCancel: { isChangingWristband = false },
+                onSave: { isChangingWristband = false; onSaveWristband($0) }
+            )
         }
     }
 

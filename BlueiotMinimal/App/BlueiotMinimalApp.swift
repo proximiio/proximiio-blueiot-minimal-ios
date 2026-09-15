@@ -52,7 +52,6 @@ struct RootView: View {
     @State private var owesLocationAsk = LocationPrompt.isOwed(CLLocationManager().authorizationStatus)
     @State private var venue: Venue?
     @State private var failure: String?
-    @State private var isChangingWristband = false
 
     var body: some View {
         Group {
@@ -61,7 +60,7 @@ struct RootView: View {
             } else if owesLocationAsk {
                 LocationPrompt { owesLocationAsk = false }
             } else if let venue {
-                VenueMapScreen(venue: venue) { isChangingWristband = true }
+                VenueMapScreen(venue: venue, wristband: wristband?.canonical ?? "", onSaveWristband: save)
             } else if let failure {
                 ContentUnavailableView(
                     "Cannot reach the venue",
@@ -78,16 +77,6 @@ struct RootView: View {
         // on screen, so the SDK — and the system prompt it raises — starts only
         // once that screen has been answered.
         .task(id: owesLocationAsk ? nil : wristband) { await connect() }
-        .sheet(isPresented: $isChangingWristband) {
-            WristbandPrompt(
-                current: wristband?.canonical ?? "",
-                onCancel: { isChangingWristband = false },
-                onSave: { id in
-                    isChangingWristband = false
-                    save(id)
-                }
-            )
-        }
     }
 
     private func save(_ id: WristbandID) {
