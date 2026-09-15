@@ -5,10 +5,16 @@
 //  THE WHOLE OF THIS APP'S POSITIONING.
 //
 //  The venue's anchors locate the wristband and report to a Proximi.io cloud relay;
-//  the phone scans nothing. `ProximiioConfiguration.relayOnly(token:)` is the preset
-//  for exactly that shape of app — it turns the SDK's own iBeacon, Eddystone, UWB and
-//  CoreLocation sources off, so there is no radio to tune and no permission to ask
-//  for. Everything else here is two calls: start the SDK, attach the relay provider.
+//  the phone scans nothing. `ProximiioConfiguration.relayOnly(token:runsInBackground:)`
+//  is the preset for exactly that shape of app — it turns the SDK's own iBeacon,
+//  Eddystone and UWB sources off, so there is no radio to tune. Everything else here
+//  is two calls: start the SDK, attach the relay provider.
+//
+//  POSITIONING CARRIES ON IN A POCKET. That takes four things, and each one missing
+//  looks the same — the dot stops 30 seconds after the screen locks, as if the
+//  relay had died: `runsInBackground: true` on the SDK configuration and again on
+//  the relay provider's (both below); the `location` background mode and its
+//  purpose string (`project.yml`); and location authorization (`LocationPrompt`).
 //
 import Foundation
 import Proximiio
@@ -26,18 +32,29 @@ final class Venue {
 
     private init(sdk: Proximiio) { self.sdk = sdk }
 
-    /// Authenticates, starts, and downloads the venue.
+    /// The SDK, configured for this shape of app. Apart from `start` so a test can
+    /// read the flag off it — `runsInBackground` defaults to `false`.
+    static func configuration(token: String) -> ProximiioConfiguration {
+        .relayOnly(token: token, runsInBackground: true)
+    }
+
+    /// Asks for location, authenticates, starts, and downloads the venue.
     ///
-    /// Three awaits, in this order, and none of them is optional:
-    ///  1. `authenticate()` validates the token and runs the first sync — which is
+    /// Four awaits, in this order, and none of them is optional:
+    ///  1. `requestPermissions()` is the system prompt behind `LocationPrompt`. iOS
+    ///     asks once; an answered question returns at once with its answer, so a
+    ///     returning visitor pays nothing here.
+    ///  2. `authenticate()` validates the token and runs the first sync — which is
     ///     what fills the floors the SDK resolves relay fixes against.
-    ///  2. `start()` starts positioning. Under `relayOnly` that means the engine and
-    ///     nothing else; the fixes arrive once a provider is attached.
-    ///  3. `loadRouteNetwork()` downloads the venue's GeoJSON: the POIs this app
+    ///  3. `start()` starts positioning. Under `relayOnly` that means the engine and
+    ///     the keep-alive location session; the fixes arrive once a provider is
+    ///     attached.
+    ///  4. `loadRouteNetwork()` downloads the venue's GeoJSON: the POIs this app
     ///     searches *and* the path network `computeRoute` walks, cached locally, so
     ///     it is the one network call wayfinding needs.
     static func start(token: String) async throws -> Venue {
-        let sdk = try Proximiio(configuration: .relayOnly(token: token))
+        let sdk = try Proximiio(configuration: configuration(token: token))
+        _ = await sdk.requestPermissions()
         _ = try await sdk.authenticate()
         try await sdk.start()
         _ = try await sdk.loadRouteNetwork()
@@ -67,7 +84,10 @@ final class Venue {
         var configuration = BlueiotCloudRelayConfiguration(
             endpoint: endpoint,
             token: VenueConfiguration.relayToken,
-            tagID: wristband.canonical
+            tagID: wristband.canonical,
+            // Without this the SDK pauses the provider on backgrounding, whatever
+            // the process itself is allowed to do.
+            runsInBackground: true
         )
         // The one thing the SDK cannot know: this venue's LocalSense calls the ground
         // floor 1 where Proximi.io calls it level 0. Delete this line, and
