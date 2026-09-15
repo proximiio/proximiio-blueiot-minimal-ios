@@ -22,6 +22,7 @@
 		BFD50B8F4E0FA87992F6461E /* Proximiio in Frameworks */ = {isa = PBXBuildFile; productRef = 481EF75981CE52268A990007 /* Proximiio */; };
 		C4A9B28FC7F411507CADF121 /* VenueMapScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = F37F6C4BF550743EAED19A26 /* VenueMapScreen.swift */; };
 		C50AC9B431153ED0F8CE5CFD /* GuidanceLine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39D2104EFFCA3D6A4A7A99D0 /* GuidanceLine.swift */; };
+		CABF34E22C81D3D7FC6E0387 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 807431AABAB1DD9642569D05 /* Assets.xcassets */; };
 		CD5F76DA126ED4496B77F93D /* ProximiioMap in Frameworks */ = {isa = PBXBuildFile; productRef = 5764333272A1FAC95E9ED601 /* ProximiioMap */; };
 		EF10C1372AD27EFE8A78C58B /* BlueiotMinimalApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07522316905DD049DF83CDD5 /* BlueiotMinimalApp.swift */; };
 		FBAFD7FD1662DFDE4E966837 /* JourneyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C811F61C4E954A692AA12DB6 /* JourneyTests.swift */; };
@@ -51,6 +52,7 @@
 		65F7C141BA52D64EF7B32140 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		672CE9E9ED95501810A58F6F /* VenuePOI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VenuePOI.swift; sourceTree = "<group>"; };
 		766868470525B50835760888 /* JourneyBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JourneyBar.swift; sourceTree = "<group>"; };
+		807431AABAB1DD9642569D05 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		83F2B6D65B109417E6EE9F23 /* WristbandIDTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WristbandIDTests.swift; sourceTree = "<group>"; };
 		901549EE1C37770588F836E6 /* DiagnosticsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagnosticsTests.swift; sourceTree = "<group>"; };
 		BAE7CA172E674FD6B5A16A7A /* POISearchSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = POISearchSheet.swift; sourceTree = "<group>"; };
@@ -147,6 +149,7 @@
 		E295F30C2F6A593363CEDCDB /* BlueiotMinimal */ = {
 			isa = PBXGroup;
 			children = (
+				807431AABAB1DD9642569D05 /* Assets.xcassets */,
 				65F7C141BA52D64EF7B32140 /* Info.plist */,
 				4BFE314A1C280831FF35D03F /* App */,
 				4D03C890CA7CAE71CE056E8C /* UI */,
@@ -163,6 +166,7 @@
 			buildConfigurationList = 08AA64860BF39A1FC3BB598D /* Build configuration list for PBXNativeTarget "BlueiotMinimal" */;
 			buildPhases = (
 				0699B0310CD99E5E3BA5384E /* Sources */,
+				4164607513221A9D6D56B173 /* Resources */,
 				92BC95035556BA1DD63A18F5 /* Frameworks */,
 			);
 			buildRules = (
@@ -238,6 +242,17 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		4164607513221A9D6D56B173 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CABF34E22C81D3D7FC6E0387 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		0699B0310CD99E5E3BA5384E /* Sources */ = {

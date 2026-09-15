@@ -41,6 +41,8 @@ targets:
       Debug: Config/App.xcconfig
       Release: Config/App.xcconfig
     sources:
+      # Everything under the folder, sources and resources alike; that includes
+      # BlueiotMinimal/Assets.xcassets, which xcodegen files as a resource.
       - path: BlueiotMinimal
     dependencies:
       - package: Proximiio
@@ -99,6 +101,13 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: io.proximi.BlueiotMinimal
         ENABLE_PREVIEWS: YES
         SWIFT_STRICT_CONCURRENCY: minimal
+        # The app icon is `AppIcon` in BlueiotMinimal/Assets.xcassets: one 1024×1024
+        # PNG, from which Xcode derives every size the App Store checks for (120 px
+        # iPhone, 152 px iPad, …) and writes `CFBundleIconName` into the built
+        # Info.plist. Validation fails on all three without a catalog. This is
+        # xcodegen's default for an application target; it is spelled out so the
+        # dependency between the catalog and the setting is visible.
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
 
   BlueiotMinimalTests:
     type: bundle.unit-test
