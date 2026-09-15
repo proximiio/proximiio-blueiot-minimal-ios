@@ -23,6 +23,9 @@ enum VenueConfiguration {
     /// `BLUEIOT_CLOUD_RELAY_TOKEN`. Without it the relay answers HTTP 401.
     static let relayToken = value("BlueiotCloudRelayToken")
 
+    /// The two credentials, for the diagnostics log to strip wherever they appear.
+    static var secrets: [String] { [token, relayToken].compactMap { $0 } }
+
     /// Which floor number the venue's Blueiot engine calls the ground floor —
     /// `BLUEIOT_GROUND_FLOOR_NO`. Not required and not a credential: empty means 0,
     /// which is the engine numbering storeys exactly the way Proximi.io does, and is

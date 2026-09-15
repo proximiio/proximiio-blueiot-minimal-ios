@@ -96,6 +96,7 @@ final class Venue {
 
         let provider = BlueiotCloudRelayPositionProvider(configuration: configuration)
         attachedProvider = provider.name
+        Proximiio.recordDiagnosticsEvent(.state, "wristband: \(wristband.canonical)")
         await sdk.attachPositionProvider(provider)
     }
 }
