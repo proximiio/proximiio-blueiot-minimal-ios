@@ -77,7 +77,7 @@ package paths.
 | `Venue/WristbandID.swift` | The one spelling rule for a band id, and where it is stored |
 | `Venue/Venue.swift` | Starting the SDK and attaching the cloud relay to one band |
 | `Venue/VenuePOI.swift` | Turning the venue's features into searchable places |
-| `UI/WristbandPrompt.swift` | The first thing the app asks a person for |
+| `UI/WristbandPrompt.swift` | The first thing the app asks a person for, and the map credits |
 | `UI/LocationPrompt.swift` | The other one, and the rule for when it is shown |
 | `Venue/JourneyStore.swift` | Keeping a visit across launches, and turning a picked place into a stop |
 | `UI/VenueMapScreen.swift` | Map, search button, route, and where a visit starts |
@@ -100,8 +100,14 @@ from it; nothing else in the project refers to the image.
 number can be changed without reinstalling: **press and hold the map for 1.5
 seconds** and the same prompt comes back as a sheet. There is deliberately no
 visible control — a visitor never needs it, and staff are told once. If your
-product wants a visible one, `VenueMapScreen.onChangeWristband` is the single
-call site.
+product wants a visible one, `VenueMapScreen.isChangingWristband` is the single
+switch.
+
+The same sheet lists the **map credits**. The map hides MapLibre's attribution ⓘ
+(`.with(chrome: .bare)` on the `MapOptions` in `VenueMapScreen`), and hiding it
+moves the OpenStreetMap (ODbL) and MapLibre credits into the app: they are
+`ProximiioMapSession.attributions`, and an app that hides the ⓘ must show them
+somewhere reachable from the map — here, behind the long press.
 
 **Floor numbers.** The relay reports the venue engine's floor numbers, and the
 SDK turns them into Proximi.io floor ids on its own: an engine floor number *is*
