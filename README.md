@@ -84,6 +84,15 @@ package paths.
 | `UI/POISearchSheet.swift` | The search list — one place, or several |
 | `UI/GuidanceLine.swift` | The turn-by-turn sentence, in this app's English |
 | `UI/JourneyBar.swift` | The visit: the stop in hand, the plan, adding to it, detours, reordering |
+| `Assets.xcassets/AppIcon.appiconset` | The app icon — a **placeholder**, see below |
+
+**The icon is a placeholder.** `AppIcon-1024.png` is a flat Proximi.io stand-in
+that says so on its face; it is there because App Store validation refuses an
+archive without an icon (no 120 px iPhone icon, no 152 px iPad icon, no
+`CFBundleIconName`), not because anyone chose it. Replace that one file with your
+product's 1024×1024 PNG — opaque, sRGB, square corners; iOS masks it — and keep
+the name, or update `Contents.json` next to it. Xcode derives every other size
+from it; nothing else in the project refers to the image.
 
 ## Two things worth knowing before you change anything
 
@@ -198,6 +207,13 @@ tokens, `token=` values, JWTs, passwords in URLs, e-mail addresses — and, beca
 token wherever and however they appear. The wristband number is written; it is
 printed on the band. The log rotates at 2 MB on the next launch, keeping one
 previous generation, and an export is capped at 10 MB.
+
+Crash logs from a TestFlight build symbolicate this app's own code; the
+`MapLibre`, `ProximiioBinary` and `ProximiioMapBinary` frameworks are SwiftPM
+binary targets whose dSYMs are not in the archive by design (App Store Connect
+says "Upload Symbols Failed" for each — expected), and Proximi.io support has them
+for the pinned versions (SDK 6.0.0-beta.38, map 6.0.0-beta.11), from the GitHub
+source releases.
 
 ## Tests
 
