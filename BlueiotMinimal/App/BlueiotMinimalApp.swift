@@ -5,18 +5,39 @@
 //  THE WHOLE APP, IN ORDER: ask for the wristband, ask for location, start the
 //  SDK, show the map.
 //
-//  Nothing else happens at this level. There is no tab bar, no onboarding flow and
+//  Apart from the diagnostics log, nothing else happens at this level. There is no tab bar, no onboarding flow and
 //  no settings — a visitor is handed a band, types the number on it once, answers
 //  one location prompt, and is on the map. Your product's screens go where
 //  `VenueMapScreen` is built.
 //
 import CoreLocation
+import Proximiio
 import SwiftUI
 
 @main
 struct BlueiotMinimalApp: App {
+    @Environment(\.scenePhase) private var scenePhase
+
+    init() {
+        // The SDK's diagnostics log — the one thing support can ask a visitor for
+        // (README, "The diagnostics log"). First statement in the app, in a `Task`
+        // because the call is async and `init` is not: until it returns, lines are
+        // dropped. If there is nowhere to write, the app runs on without a log;
+        // there is nothing a visitor could do about it.
+        Task {
+            try? await Proximiio.startDiagnosticsRecording(
+                .init(capturesSDKLog: true, additionalSecrets: VenueConfiguration.secrets)
+            )
+        }
+    }
+
     var body: some Scene {
         WindowGroup { RootView() }
+            // The one thing the SDK cannot see from inside: when the app left the screen.
+            .onChange(of: scenePhase) { _, phase in
+                guard phase != .inactive else { return }
+                Proximiio.recordDiagnosticsEvent(.state, "scene: \(phase == .background ? "background" : "foreground")")
+            }
     }
 }
 

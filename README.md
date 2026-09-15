@@ -181,6 +181,24 @@ camera of its own. Panning, pinching or rotating the map releases the follow; th
 library notices the hand and publishes it through `ProximiioMapSession.cameraMode`,
 which is what fills or hollows the button's symbol.
 
+## The diagnostics log
+
+From its first statement (`BlueiotMinimalApp.init`, and the comment there on why
+it must be first) the app has the SDK write down everything positioning sees —
+fixes, floors, the relay coming and going, the SDK's own warnings, and `scene:
+background` / `scene: foreground` as the app leaves and returns to the screen —
+in `Documents/proximiio-diagnostics/proximiio-diagnostics.log` inside the app's
+container. When something goes wrong that nobody can reproduce, Proximi.io
+support may ask for that folder; on a development build, Xcode's Devices and
+Simulators window downloads the container.
+
+Nothing in it is a credential. The SDK strips the shapes it knows — bearer
+tokens, `token=` values, JWTs, passwords in URLs, e-mail addresses — and, because
+`VenueConfiguration.secrets` hands them over, the application token and the relay
+token wherever and however they appear. The wristband number is written; it is
+printed on the band. The log rotates at 2 MB on the next launch, keeping one
+previous generation, and an export is capped at 10 MB.
+
 ## Tests
 
 ```sh
@@ -188,12 +206,13 @@ xcodebuild -project BlueiotMinimal.xcodeproj -scheme BlueiotMinimal \
   -destination 'platform=iOS Simulator,name=iPhone 17' test
 ```
 
-Nineteen of them, and all four subjects are chosen for the same reason: they
+Twenty of them, and all five subjects are chosen for the same reason: they
 fail without anything on screen looking wrong. A wristband read one way by the
 app and another way by the relay matches nothing, and the symptom is a dot that
 never arrives. A visit that does not survive a launch loses a visitor's afternoon
 in silence. An amenity query that reads the venue's data wrongly makes a venue
 with toilets look like a venue without any. A background flag left at its default,
 or a location ask that nags or never fires, stops the dot thirty seconds after the
-screen locks. The screens are not tested; a layout that is wrong is a layout you
+screen locks. A credential written into the diagnostics log verbatim travels with
+every export. The screens are not tested; a layout that is wrong is a layout you
 can see.
