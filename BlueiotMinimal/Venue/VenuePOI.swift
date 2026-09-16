@@ -41,6 +41,20 @@ struct VenuePOI: Identifiable, Equatable {
         }
     }
 
+    /// The place a map tap selects, or `nil` when the tap hit no place.
+    ///
+    /// `identifiers` are the feature ids `ProximiioMapSession.onFeatureTap`
+    /// reports, topmost first. They are `ProximiioFeature.id` values, the same
+    /// ids as `VenuePOI.id`. A POI glyph and its label report the same id; a
+    /// symbol drawn for any other feature, such as a level changer, reports an
+    /// id that matches no place. The first id that matches a place wins.
+    static func place(under identifiers: [String], in pois: [VenuePOI]) -> VenuePOI? {
+        for identifier in identifiers {
+            if let poi = pois.first(where: { $0.id == identifier }) { return poi }
+        }
+        return nil
+    }
+
     /// Returns `nil` for every feature that is not a point POI. Rooms, walls,
     /// level changers and the path network arrive in the same array.
     private init?(feature: ProximiioFeature) {
