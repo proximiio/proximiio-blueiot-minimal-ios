@@ -1,9 +1,9 @@
 # Proximi.io Blueiot — minimal reference app
 
-A complete venue app in 1334 lines of Swift across twelve files. It asks
+A complete venue app in 1475 lines of Swift across thirteen files. It asks
 for the visitor's wristband number once, shows the venue map, searches the
-venue's places, routes to the one they pick, says which turn to take next, and
-walks a whole afternoon of them in order — added to, reordered and detoured from
+venue's places, routes to the one they pick, says which turn to take next, notes
+the places they enter and leave, and walks a whole afternoon of them in order — added to, reordered and detoured from
 as the afternoon goes, with the phone in a pocket as often as not. The visitor is
 positioned by the venue's own Blueiot anchors, through the Proximi.io cloud relay
 — the phone scans nothing.
@@ -14,7 +14,7 @@ comments mark the seams where your own product's code goes.
 ## What it deliberately is NOT
 
 No settings screen. No diagnostics. No staff mode, no engine switches, no event
-log, no offline package, no step list, no notification prompts. Nothing reorders
+log, no offline package, no step list. Nothing reorders
 a visit on its own. Those all exist and are all deliberate omissions — every
 knob is a thing you would have to read, decide about and maintain.
 
@@ -23,8 +23,9 @@ app (`proximiio-blueiot-ios`), which is a field-debugging tool for the Proximi.i
 team rather than a starting point for a product.
 
 Positioning does carry on with the phone in a pocket or the screen locked. What
-that asks of a visitor is one location prompt; what it asks of you is under
-**In a pocket** below.
+that asks of a visitor is one location prompt, and one for notifications the first
+time there is one to show; what it asks of you is under **In a pocket** and
+**Geofence notifications** below.
 
 ## Fill in the configuration
 
@@ -75,10 +76,11 @@ package paths.
 | `App/BlueiotMinimalApp.swift` | The order of things: wristband → location → SDK → map |
 | `App/VenueConfiguration.swift` | The three build-time values |
 | `Venue/WristbandID.swift` | The one spelling rule for a band id, and where it is stored |
-| `Venue/Venue.swift` | Starting the SDK and attaching the cloud relay to one band |
+| `Venue/Venue.swift` | Starting the SDK, attaching the cloud relay to one band, and a note per geofence |
 | `Venue/VenuePOI.swift` | Turning the venue's features into searchable places |
 | `UI/WristbandPrompt.swift` | The first thing the app asks a person for, and the map credits |
 | `UI/LocationPrompt.swift` | The other one, and the rule for when it is shown |
+| `UI/NotificationPrompt.swift` | The third, asked mid-visit: the rule for when, and the words on a note |
 | `Venue/JourneyStore.swift` | Keeping a visit across launches, and turning a picked place into a stop |
 | `UI/VenueMapScreen.swift` | Map, search button, route, and where a visit starts |
 | `UI/POISearchSheet.swift` | The search list — one place, or several |
@@ -145,6 +147,20 @@ refusal is not asked about again, and the map still works on screen. The phone's
 location never enters the position — the venue's anchors place the wristband; the
 location session is only what keeps the process scheduled.
 
+**Geofence notifications.** Every geofence the wristband enters or leaves is a
+local notification — on screen or in a pocket, because the location mode above
+already keeps the process alive, and a local notification needs no background
+mode and no purpose string of its own. The geofences are the ones drawn in the
+Proximi.io Portal: `authenticate()` syncs them, the SDK's engine decides the
+transitions with its own enter/exit tolerance (the app adds no policy of its own),
+and `Venue.announceGeofences` turns each one into one note. The prompt for them is
+not on the launch path: `NotificationPrompt` comes up over the map on the first
+transition that would have shown a note, and iOS's own prompt follows; a first
+transition that arrives with the phone in a pocket leaves the card waiting for the
+next time the app is on screen, and whatever iOS is told, nobody is asked again.
+Each transition is also a line in the diagnostics log — `geofence enter · Lobby ·
+notified`, or `· not authorized`.
+
 **Turn-by-turn.** `session.guidanceRules = .venueWalk` in `VenueMapScreen` is the
 whole opt-in. The map library then follows the route it is already drawing and
 republishes `session.guidance` on every fix; the bottom bar shows the turn in
@@ -200,7 +216,8 @@ which is what fills or hollows the button's symbol.
 
 From its first statement (`BlueiotMinimalApp.init`, and the comment there on why
 it must be first) the app has the SDK write down everything positioning sees —
-fixes, floors, the relay coming and going, the SDK's own warnings, and `scene:
+fixes, floors, the relay coming and going, the SDK's own warnings, each geofence
+crossed and whether it was notified, and `scene:
 background` / `scene: foreground` as the app leaves and returns to the screen —
 in `Documents/proximiio-diagnostics/proximiio-diagnostics.log` inside the app's
 container. When something goes wrong that nobody can reproduce, Proximi.io
@@ -228,7 +245,7 @@ xcodebuild -project BlueiotMinimal.xcodeproj -scheme BlueiotMinimal \
   -destination 'platform=iOS Simulator,name=iPhone 17' test
 ```
 
-Twenty of them, and all five subjects are chosen for the same reason: they
+Twenty-three of them, and all six subjects are chosen for the same reason: they
 fail without anything on screen looking wrong. A wristband read one way by the
 app and another way by the relay matches nothing, and the symptom is a dot that
 never arrives. A visit that does not survive a launch loses a visitor's afternoon
@@ -236,5 +253,7 @@ in silence. An amenity query that reads the venue's data wrongly makes a venue
 with toilets look like a venue without any. A background flag left at its default,
 or a location ask that nags or never fires, stops the dot thirty seconds after the
 screen locks. A credential written into the diagnostics log verbatim travels with
-every export. The screens are not tested; a layout that is wrong is a layout you
+every export. A note that says *arrived* on the way out, or a notification ask
+that fires on launch and spends iOS's one prompt, is wrong the same silent way.
+The screens are not tested; a layout that is wrong is a layout you
 can see.

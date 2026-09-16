@@ -2,13 +2,13 @@
 //  Venue.swift
 //  BlueiotMinimal
 //
-//  THE WHOLE OF THIS APP'S POSITIONING.
+//  THE WHOLE OF THIS APP'S POSITIONING, AND THE ONE THING IT DOES WITH IT UNASKED.
 //
 //  The venue's anchors locate the wristband and report to a Proximi.io cloud relay;
 //  the phone scans nothing. `ProximiioConfiguration.relayOnly(token:runsInBackground:)`
 //  is the preset for exactly that shape of app — it turns the SDK's own iBeacon,
-//  Eddystone and UWB sources off, so there is no radio to tune. Everything else here
-//  is two calls: start the SDK, attach the relay provider.
+//  Eddystone and UWB sources off, so there is no radio to tune. The rest is two calls,
+//  start the SDK and attach the relay, and a notification per geofence crossed.
 //
 //  POSITIONING CARRIES ON IN A POCKET. That takes four things, and each one missing
 //  looks the same — the dot stops 30 seconds after the screen locks, as if the
@@ -17,8 +17,11 @@
 //  purpose string (`project.yml`); and location authorization (`LocationPrompt`).
 //
 import Foundation
+import Observation
 import Proximiio
+import UserNotifications
 
+@Observable
 @MainActor
 final class Venue {
 
@@ -26,11 +29,18 @@ final class Venue {
     /// venue, the floors and the live position off it.
     let sdk: Proximiio
 
+    /// Raised by the first geofence note that would have shown while iOS has never
+    /// been asked about notifications; `NotificationPrompt` lowers it. Never on launch.
+    var owesNotificationAsk = false
+
     /// So a second `follow(_:)` can take the first one down. Only the name is kept —
     /// detaching is by name.
     private var attachedProvider: String?
 
-    private init(sdk: Proximiio) { self.sdk = sdk }
+    private init(sdk: Proximiio) {
+        self.sdk = sdk
+        announceGeofences()
+    }
 
     /// The SDK, configured for this shape of app. Apart from `start` so a test can
     /// read the flag off it — `runsInBackground` defaults to `false`.
@@ -98,5 +108,39 @@ final class Venue {
         attachedProvider = provider.name
         Proximiio.recordDiagnosticsEvent(.state, "wristband: \(wristband.canonical)")
         await sdk.attachPositionProvider(provider)
+    }
+
+    /// Every geofence entered or left — drawn in the Proximi.io Portal, synced by
+    /// `authenticate()` — is one notification, on screen or in a pocket. The SDK applies
+    /// enter/exit tolerance already, so: one event, one note. Privacy zones are not announced.
+    private func announceGeofences() {
+        Task {
+            for await event in await sdk.geofenceEvents() {
+                switch event {
+                case .entered(let geofence): await announce(name: geofence.name, entered: true)
+                case .exited(let geofence, _): await announce(name: geofence.name, entered: false)
+                default: break
+                }
+            }
+        }
+    }
+
+    private func announce(name: String?, entered: Bool) async {
+        let note = NotificationPrompt.note(name: name, entered: entered)
+        let center = UNUserNotificationCenter.current()
+        let status = await center.notificationSettings().authorizationStatus
+        // The first note that would have shown is the moment to ask: the visitor is standing in it.
+        if NotificationPrompt.isOwed(status) { owesNotificationAsk = true }
+        guard status == .authorized else {
+            Proximiio.recordDiagnosticsEvent(.state, "\(note.logLine) · not authorized")
+            return
+        }
+        let content = UNMutableNotificationContent()
+        content.title = note.title
+        content.body = note.body
+        content.sound = .default
+        // A fresh identifier per event, so two notes never replace each other.
+        try? await center.add(UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil))
+        Proximiio.recordDiagnosticsEvent(.state, "\(note.logLine) · notified")
     }
 }
