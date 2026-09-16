@@ -2,9 +2,11 @@
 //  GeofenceNotificationTests.swift
 //  BlueiotMinimalTests
 //
-//  Notification text per direction, and the prompt rule. A wrong direction is not
-//  visible on the map. iOS shows the notification dialog once per install; a
-//  prompt on launch would spend it before any geofence event.
+//  Notification text per direction, the prompt rule, the prompt's place in the
+//  launch order, and foreground presentation. Each failure is silent: a wrong
+//  direction is not visible on the map, a missing prompt leaves authorization
+//  `.notDetermined` and nothing is posted, and a missing delegate hides every
+//  notification posted while the app is on screen.
 //
 import UserNotifications
 import XCTest
@@ -37,5 +39,27 @@ final class GeofenceNotificationTests: XCTestCase {
         XCTAssertFalse(NotificationPrompt.isOwed(.authorized))
         XCTAssertFalse(NotificationPrompt.isOwed(.denied))
         XCTAssertFalse(NotificationPrompt.isOwed(.provisional))
+    }
+
+    /// Wristband, location, notifications, map. Each prompt is shown only after
+    /// the ones before it are answered.
+    func testLaunchOrderAsksForNotificationsAfterLocation() {
+        XCTAssertEqual(LaunchStep.current(hasWristband: false, owesLocationAsk: true, owesNotificationAsk: true), .wristband)
+        XCTAssertEqual(LaunchStep.current(hasWristband: true, owesLocationAsk: true, owesNotificationAsk: true), .location)
+        XCTAssertEqual(LaunchStep.current(hasWristband: true, owesLocationAsk: false, owesNotificationAsk: true), .notifications)
+        XCTAssertEqual(LaunchStep.current(hasWristband: true, owesLocationAsk: false, owesNotificationAsk: false), .map)
+    }
+
+    /// The test host runs `BlueiotMinimalApp.init`, which installs the delegate.
+    /// `delegate` is `nil` if the presenter is not retained: the center holds it weakly.
+    func testNotificationInTheForegroundIsShownAsABanner() throws {
+        let delegate = try XCTUnwrap(UNUserNotificationCenter.current().delegate)
+        XCTAssertTrue(delegate is ForegroundNotificationPresenter)
+        // `UNNotification` has no public initializer; `NSObject.init()` creates an
+        // empty instance. The presenter does not read it.
+        let notification = try XCTUnwrap((UNNotification.self as NSObject.Type).init() as? UNNotification)
+        var options: UNNotificationPresentationOptions = []
+        delegate.userNotificationCenter?(.current(), willPresent: notification, withCompletionHandler: { options = $0 })
+        XCTAssertEqual(options, [.banner, .list, .sound])
     }
 }

@@ -20,21 +20,15 @@
 //  authorization (`LocationPrompt`).
 //
 import Foundation
-import Observation
 import Proximiio
 import UserNotifications
 
-@Observable
 @MainActor
 final class Venue {
 
     /// The started SDK. `VenueMapScreen` passes it to the map, which reads the
     /// venue, the floors and the live position from it.
     let sdk: Proximiio
-
-    /// Set by the first geofence event that arrives while notification
-    /// authorization is `.notDetermined`; `NotificationPrompt` clears it. Never set on launch.
-    var owesNotificationAsk = false
 
     /// The name of the attached provider, kept so a later `follow(_:)` can detach
     /// it. Detaching is by name.
@@ -117,7 +111,10 @@ final class Venue {
     /// Posts one local notification per geofence enter or exit, in the foreground
     /// and in the background. The geofences are defined in Proximi.io Portal and
     /// synced by `authenticate()`. The SDK applies its enter/exit tolerance; the
-    /// app adds no filtering. Privacy zones are not announced.
+    /// app adds no filtering. Privacy zones are not announced. Nothing is posted
+    /// unless notification authorization is `.authorized` (`NotificationPrompt`).
+    /// `ForegroundNotificationPresenter` shows a posted notification while the
+    /// app is in the foreground.
     private func announceGeofences() {
         Task {
             for await event in await sdk.geofenceEvents() {
@@ -133,10 +130,7 @@ final class Venue {
     private func announce(name: String?, entered: Bool) async {
         let note = NotificationPrompt.note(name: name, entered: entered)
         let center = UNUserNotificationCenter.current()
-        let status = await center.notificationSettings().authorizationStatus
-        // Raises the prompt on the first event while authorization is undetermined.
-        if NotificationPrompt.isOwed(status) { owesNotificationAsk = true }
-        guard status == .authorized else {
+        guard await center.notificationSettings().authorizationStatus == .authorized else {
             Proximiio.recordDiagnosticsEvent(.state, "\(note.logLine) · not authorized")
             return
         }
