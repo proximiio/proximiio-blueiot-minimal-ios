@@ -1,27 +1,25 @@
-// Base build configuration — TRACKED. No CREDENTIAL belongs in this file.
+// Base build configuration. Tracked; no credential belongs in this file.
 //
-// The three credential keys below are deliberately EMPTY here and take their value from the
-// untracked Config/Secrets.xcconfig, which the `#include?` at the bottom pulls
-// in last (in xcconfig the last assignment wins). Empty values leave the
-// Info.plist keys empty and the app shows a one-line setup hint rather than
-// crashing.
+// The three credential keys are empty here and take their values from the
+// untracked Config/Secrets.xcconfig, which the `#include?` at the end pulls in
+// last (the last assignment wins). Empty values leave the Info.plist keys empty;
+// the app then shows a setup hint instead of crashing.
 //
-// Copy Config/Secrets.example.xcconfig to Config/Secrets.xcconfig and fill it
-// in there. That file is gitignored, so a real credential cannot be committed.
+// Copy Config/Secrets.example.xcconfig to Config/Secrets.xcconfig and fill it in
+// there. That file is gitignored.
 //
-// NOTE: "//" starts a comment in xcconfig — write URLs as https:/$()/host, no quotes.
+// NOTE: "//" starts a comment in xcconfig. Write URLs as https:/$()/host, without quotes.
 PROXIMIIO_APPLICATION_TOKEN =
 BLUEIOT_CLOUD_RELAY_URL =
 BLUEIOT_CLOUD_RELAY_TOKEN =
 
-// The one below is the venue's SURVEY, not a credential, so it carries this venue's
-// working value here in the tracked file.
+// The value below is a venue setting, not a credential, so it is tracked here.
 
-// Which floor number the venue's Blueiot LocalSense engine calls the ground floor.
-// Proximi.io calls it level 0; LocalSense deployments are usually numbered from 1,
-// and this one is — the relay reports the ground floor as floor 1. The SDK derives
-// the whole number-to-storey table from the venue's own floors; this integer is the
-// single offset it cannot know, and it goes away when the deployment is renumbered.
-// Empty = 0, i.e. the engine numbers storeys exactly the way Proximi.io does.
+// The floor number the venue's BlueIoT LocalSense engine reports for the ground
+// floor. A LocalSense engine numbers floors from 1 with no 0 and basements
+// negative; Proximi.io numbers the ground floor 0. `1` states that convention;
+// the SDK applies the shift above ground only (engine 1 is level 0, engine 2 is
+// level 1, engine -1 stays level -1). Empty = 0: no shift, for an engine that
+// numbers the ground floor 0.
 BLUEIOT_GROUND_FLOOR_NO = 1
 #include? "Secrets.xcconfig"

@@ -2,9 +2,9 @@
 //  GeofenceNotificationTests.swift
 //  BlueiotMinimalTests
 //
-//  A note that says "arrived" on the way out is wrong in a way nothing on the map
-//  shows, and a notification ask that fires on launch spends the one prompt iOS
-//  gives on a screen nobody was standing in.
+//  Notification text per direction, and the prompt rule. A wrong direction is not
+//  visible on the map. iOS shows the notification dialog once per install; a
+//  prompt on launch would spend it before any geofence event.
 //
 import UserNotifications
 import XCTest
@@ -24,14 +24,14 @@ final class GeofenceNotificationTests: XCTestCase {
         XCTAssertEqual(left.logLine, "geofence exit · Lobby")
     }
 
-    /// A geofence left unnamed in the Portal still produces a note that reads.
+    /// A geofence without a name in Proximi.io Portal still produces a readable note.
     func testUnnamedGeofenceStillReads() {
         XCTAssertEqual(NotificationPrompt.note(name: "", entered: true).title, "Unnamed area")
         XCTAssertEqual(NotificationPrompt.note(name: nil, entered: false).logLine, "geofence exit · Unnamed area")
     }
 
-    /// Asked once, on the first note, and never after an answer — location's rule,
-    /// for the other permission.
+    /// Notifications are asked for only while the status is `.notDetermined`;
+    /// the same rule as location.
     func testNotificationsAreAskedForOnlyWhileUndetermined() {
         XCTAssertTrue(NotificationPrompt.isOwed(.notDetermined))
         XCTAssertFalse(NotificationPrompt.isOwed(.authorized))

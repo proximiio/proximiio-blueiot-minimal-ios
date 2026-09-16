@@ -2,23 +2,20 @@
 //  WristbandPrompt.swift
 //  BlueiotMinimal
 //
-//  The one thing this app ever asks a person for.
-//
-//  It is shown full-screen on first run and as a sheet when somebody changes the
-//  band — the same view either way, which is why there is no settings screen. See
-//  `VenueMapScreen` for how the sheet is reached.
+//  Wristband prompt. Shown full-screen on the first run and as a sheet when the
+//  id is changed; the same view in both cases, so there is no settings screen.
+//  `VenueMapScreen` opens the sheet.
 //
 import ProximiioMap
 import SwiftUI
 
 struct WristbandPrompt: View {
-    /// What is in the field when it opens: empty on first run, the current id when
-    /// somebody is changing it.
+    /// Initial text: empty on the first run, the current id when changing it.
     let current: String
-    /// What the map would have shown behind its attribution ⓘ, which this app hides
-    /// (`VenueMapScreen`): the loaded style's credits. Empty on first run — no map yet.
+    /// The credits of the loaded map style. The app hides the map's attribution ⓘ
+    /// (`VenueMapScreen`), so they are listed here. Empty on the first run, before a map exists.
     let credits: [MapAttribution]
-    /// `nil` on first run — there is nothing to go back to.
+    /// `nil` on the first run; there is no previous screen.
     let onCancel: (() -> Void)?
     let onSave: (WristbandID) -> Void
 
@@ -51,9 +48,8 @@ struct WristbandPrompt: View {
                 } header: {
                     Text("Wristband number")
                 } footer: {
-                    // The echo is the safety net, not the validator: "that is not an
-                    // id" cannot tell you *which* tag was understood, and that is the
-                    // question somebody who mistyped a digit actually has.
+                    // The footer shows which tag the text parsed to. A validity error
+                    // alone would not reveal a mistyped digit.
                     if let parsed {
                         Text("Following tag \(parsed.canonical) (\(parsed.hexadecimal)).")
                     } else {
@@ -67,8 +63,8 @@ struct WristbandPrompt: View {
                     }
                 }
 
-                // Nothing when the style declares nothing. MapLibre strips the leading
-                // "©" from each credit on the way in; it goes back on here.
+                // Empty when the style declares no credits. MapLibre strips the leading
+                // "©" from each credit; it is added back here.
                 if !credits.isEmpty {
                     Section("Map credits") {
                         ForEach(credits, id: \.self) { credit in

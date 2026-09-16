@@ -2,20 +2,16 @@
 //  VenueMapScreen.swift
 //  BlueiotMinimal
 //
-//  THE APP, ONCE IT KNOWS THE WRISTBAND: a venue map, a search, a route, and the
-//  turn to take next.
+//  Main screen: the venue map, place search, one route and the next instruction.
 //
-//  Nothing here draws on the map. `ProximiioMapView` owns the venue style, the
-//  floors, the amenities, the blue dot and — given a route — the drawing of it, split
-//  so the floor on screen shows its own segment. What this screen owns is three
-//  lines of app: which place the visitor picked, asking the SDK for a route to it,
-//  and handing that route over. The recentre button is a fourth, and it is one call
-//  into the library's own follow camera rather than a camera this app wrote.
-//  Turn-by-turn is a fifth: one line opts in, and the only thing left to the app is
-//  the English the instruction is said in.
+//  `ProximiioMapView` draws the venue style, the floors, the amenities, the
+//  position marker and the route, split so the floor on screen shows its own
+//  segment. This screen owns the picked place, the `computeRoute` call and the
+//  `setRoute` hand-over. The recentre button calls the library's follow camera.
+//  Turn-by-turn is enabled with one assignment (`guidanceRules`); only the
+//  instruction text belongs to the app.
 //
-//  Your product's chrome goes in `bottomBar`. Your product's screens go beside this
-//  one.
+//  Product chrome goes in `bottomBar`. Product screens go beside this one.
 //
 import Proximiio
 import ProximiioMap
@@ -23,21 +19,21 @@ import SwiftUI
 
 struct VenueMapScreen: View {
     let venue: Venue
-    /// The band being followed, and what to do with a different one. The sheet that
-    /// asks is behind the long press below, and lists the map's credits with it.
+    /// The followed wristband id and the save callback for a new one. The sheet
+    /// that changes it opens on the long press below and also lists the map credits.
     let wristband: String
     let onSaveWristband: (WristbandID) -> Void
 
-    /// The map session, named here rather than left to `ProximiioMapView(sdk:)`,
-    /// because naming it is what gives this screen something to call `setRoute` on.
+    /// The map session is created here rather than by `ProximiioMapView(sdk:)`
+    /// so this screen can call `setRoute` on it.
     @StateObject private var session: ProximiioMapSession
 
     @State private var places: [VenuePOI] = []
     @State private var destination: VenuePOI?
     @State private var note: String?
     @State private var isSearching = false
-    /// The visit in progress, restored from disk on the first body evaluation. `nil`
-    /// is the ordinary state of this app: a search bar and one destination.
+    /// The visit in progress, restored from disk on the first body evaluation.
+    /// `nil` is single-destination mode: a search bar and one route.
     @State private var journey: Journey? = JourneyStore.load()
     @State private var isPlanningVisit = false
     @State private var isChangingWristband = false
@@ -50,14 +46,14 @@ struct VenueMapScreen: View {
         _session = StateObject(wrappedValue: ProximiioMapSession(
             sdk: venue.sdk,
             options: MapOptions(
-                // The library's own floor picker. This app has no other, so there is
-                // no risk of two.
+                // The library's floor picker. The app has no other.
                 floorSelector: .trailing,
-                // Draw a route whenever one is set, and clear it when one is not.
+                // Draws a route when one is set and clears it when none is.
                 route: .automatic
             )
-            // No attribution ⓘ, MapLibre logo or compass over the map. The credits the
-            // ⓘ presented are this app's to show now; the long-press sheet lists them.
+            // Removes the attribution ⓘ, the MapLibre logo and the compass. The
+            // credits the ⓘ presented must then be shown by the app; the long-press
+            // sheet lists them.
             .with(chrome: .bare)
         ))
     }
@@ -66,30 +62,30 @@ struct VenueMapScreen: View {
         ZStack(alignment: .bottom) {
             ProximiioMapView(session: session)
                 .ignoresSafeArea()
-                // Changing the wristband without a settings screen: press and hold
-                // the map. `simultaneousGesture` so the map keeps its own pan, pinch
-                // and rotate. Undiscoverable on purpose — a visitor is handed a band
-                // and never needs this; staff are told about it once.
+                // Changes the wristband without a settings screen: press and hold
+                // the map for 1.5 s. `simultaneousGesture` keeps the map's own pan,
+                // pinch and rotate. There is intentionally no visible control; a
+                // visitor does not need it, and staff are told once.
                 .simultaneousGesture(
                     LongPressGesture(minimumDuration: 1.5)
                         .onEnded { _ in isChangingWristband = true }
                 )
 
             if let journey {
-                // The journey drives the same session the map is already using, so
-                // there is one map, one camera and one drawn route either way.
+                // The journey uses the same session as the map: one map, one
+                // camera and one drawn route in either mode.
                 JourneyBar(session: session, journey: journey, places: places, onEnd: endVisit)
             } else {
                 bottomBar
             }
         }
         .task {
-            // One line turns turn-by-turn on, and the session follows the route it
-            // is already drawing: which turn is next, how far is left to it, whether
-            // the visitor has walked off it, whether they have arrived. Off by
-            // default, so an app that does not want it writes nothing.
+            // Enables turn-by-turn. The session then follows the route it draws
+            // and publishes `guidance`: the next manoeuvre, the distance to it,
+            // whether the visitor is off the route and whether they have arrived.
+            // Guidance is off by default.
             session.guidanceRules = .venueWalk
-            // A local cache read, not a download: `Venue.start` already fetched it.
+            // A local cache read, not a download: `Venue.start` fetched the features.
             places = VenuePOI.all(in: await venue.sdk.features())
         }
         .sheet(isPresented: $isSearching) {
@@ -99,8 +95,8 @@ struct VenueMapScreen: View {
             }
         }
         .sheet(isPresented: $isPlanningVisit) {
-            // The same search, in the same file, picking several places instead of
-            // one. The order they are tapped is the order they are walked.
+            // The same search sheet in multi-select. The tap order is the
+            // journey order.
             POISearchSheet(pois: places, allowsMultiple: true) { picked in
                 guard !picked.isEmpty else { return }
                 session.clearRoute()
@@ -110,8 +106,8 @@ struct VenueMapScreen: View {
             }
         }
         .sheet(isPresented: $isChangingWristband) {
-            // Read, not stored: this body re-evaluates whenever the session publishes,
-            // so the sheet lists what the loaded style declares.
+            // `session.attributions` is read on each body evaluation, so the
+            // sheet lists the credits of the loaded style.
             WristbandPrompt(
                 current: wristband,
                 credits: session.attributions,
@@ -171,42 +167,39 @@ struct VenueMapScreen: View {
         }
     }
 
-    /// Several places instead of one. Hidden while a visit is running, because
-    /// `JourneyBar` takes this bar's place then.
+    /// Opens the multi-select search. Hidden while a visit is running;
+    /// `JourneyBar` replaces this bar.
     private var visitButton: some View {
         Button { isPlanningVisit = true } label: { Image(systemName: "list.bullet") }
             .disabled(places.isEmpty)
             .accessibilityLabel("Plan a visit")
     }
 
-    /// `JourneyNavigator.end()` hands the session back: it clears the route, the
-    /// journey overlay and — because a journey owns guidance while it runs —
-    /// `guidanceRules`. Turning guidance back on is what returns this screen to the
-    /// single-route behaviour it had before the visit started.
+    /// `JourneyNavigator.end()` clears the route, the journey overlay and
+    /// `guidanceRules`, which a journey owns while it runs. Setting
+    /// `guidanceRules` again restores the single-route guidance this screen had
+    /// before the visit.
     private func endVisit() {
         journey = nil
         JourneyStore.save(nil)
         session.guidanceRules = .venueWalk
     }
 
-    /// "Show me where I am", and nothing else is needed to make it work.
+    /// Recentres the map on the wristband.
     ///
-    /// `ProximiioMapSession` owns the follow camera (`MapOptions.camera` defaults to
-    /// `.follow`, so the map is already following when the first fix lands).
-    /// `recentre()` re-arms that camera and eases the zoom back in;
-    /// `followMyFloor()` unpins the storey, because a visitor who taps this while
-    /// looking at another floor means "take me back", and taking them back to a
-    /// storey they are not on would not.
+    /// `ProximiioMapSession` owns the follow camera; `MapOptions.camera` defaults
+    /// to `.follow`, so the map follows from the first fix. `recentre()` re-arms
+    /// that camera and restores the zoom. `followMyFloor()` unpins the floor, so
+    /// a tap while viewing another floor returns to the visitor's floor.
     ///
-    /// Panning, pinching or rotating the map drops the camera to `.free` on its own —
-    /// the library watches for the hand and publishes the change through
-    /// ``ProximiioMapSession/cameraMode``. This screen only reads that, and must not
-    /// add gesture handling of its own.
+    /// Panning, pinching or rotating the map sets the camera to `.free`. The
+    /// library detects the gesture and publishes the change through
+    /// ``ProximiioMapSession/cameraMode``. This screen reads that value and adds
+    /// no gesture handling of its own.
     ///
-    /// Filled symbol while following, outline while free. Disabled until there is a
-    /// position at all: with the wristband silent or the relay down there is nowhere
-    /// to centre on, and a button that looks live and does nothing is worse than one
-    /// that says so.
+    /// Filled symbol while following, outline while free. Disabled while
+    /// `session.position` is `nil`: no fix has arrived from the wristband or the
+    /// relay, so there is nothing to centre on.
     private var recentreButton: some View {
         Button {
             session.followMyFloor()
@@ -219,9 +212,9 @@ struct VenueMapScreen: View {
         .accessibilityAddTraits(session.cameraMode == .free ? [] : .isSelected)
     }
 
-    /// The only wayfinding in the app: from wherever the wristband says the visitor
-    /// is, to the place they picked. The SDK computes it on-device off the network it
-    /// already downloaded; the map splits and draws it.
+    /// Computes the route from the current wristband position to the picked
+    /// place. The SDK computes it on-device from the downloaded route network;
+    /// the map splits and draws it.
     private func route(to place: VenuePOI) async {
         destination = place
         guard let here = session.position else {
