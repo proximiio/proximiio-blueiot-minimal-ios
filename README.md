@@ -227,7 +227,7 @@ Crash logs from a TestFlight build symbolicate the app's own code. The
 `MapLibre`, `ProximiioBinary` and `ProximiioMapBinary` frameworks are SwiftPM
 binary targets whose dSYMs are not in the archive by design; App Store Connect
 reports "Upload Symbols Failed" for each, which is expected. Proximi.io support
-has the dSYMs for the pinned versions (SDK 6.0.0-beta.40, map 6.0.0-beta.13)
+has the dSYMs for the pinned versions (SDK 6.0.0-beta.40, map 6.0.0-beta.14)
 from the GitHub source releases.
 
 ## Tests

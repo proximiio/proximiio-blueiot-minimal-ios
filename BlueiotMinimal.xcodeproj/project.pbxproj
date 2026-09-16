@@ -541,7 +541,7 @@
 			repositoryURL = "https://github.com/proximiio/proximiio-map-ios-binary";
 			requirement = {
 				kind = exactVersion;
-				version = "6.0.0-beta.13";
+				version = "6.0.0-beta.14";
 			};
 		};
 		C82611E0490E3DF0A6F7D3C3 /* XCRemoteSwiftPackageReference "proximiio-sdk-ios-binary" */ = {
