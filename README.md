@@ -1,6 +1,6 @@
 # Proximi.io BlueIoT — minimal reference app
 
-A complete venue app in 1439 lines of Swift across thirteen files. It asks for
+A complete venue app in 1470 lines of Swift across thirteen files. It asks for
 the visitor's wristband number once, shows the venue map, searches the venue's
 places, routes to the picked place, shows the next turn, posts a notification
 for each place entered or left, and walks a planned visit of several places in
@@ -156,6 +156,12 @@ the app is next in the foreground. Whatever the answer, nobody is asked again.
 Each transition is also a line in the diagnostics log: `geofence enter · Lobby ·
 notified`, or `· not authorized`.
 
+**Picking a place.** A tap on a place's glyph or label on the map picks it as a
+search pick does, through `route(to:)` in `VenueMapScreen`, after
+`VenuePOI.place(under:in:)` matches the feature ids
+`ProximiioMapSession.onFeatureTap` reports; a tap on no place, or during a
+visit, changes nothing.
+
 **Turn-by-turn.** `session.guidanceRules = .venueWalk` in `VenueMapScreen`
 enables it. The map library then follows the route it draws and republishes
 `session.guidance` on every fix; the bottom bar shows the next manoeuvre, the
@@ -237,7 +243,7 @@ xcodebuild -project BlueiotMinimal.xcodeproj -scheme BlueiotMinimal \
   -destination 'platform=iOS Simulator,name=iPhone 17' test
 ```
 
-Twenty-three tests, in six subjects chosen for the same reason: each fails
+Twenty-seven tests, in seven subjects chosen for the same reason: each fails
 without anything on screen looking wrong. A wristband parsed one way by the app
 and another by the relay matches nothing, and the symptom is a position that
 never arrives. A visit that does not survive a launch is lost silently. An
@@ -247,4 +253,6 @@ prompt that repeats or never fires, stops positioning thirty seconds after the
 screen locks. A credential written into the diagnostics log verbatim travels
 with every export. A notification that says *arrived* on the way out, or a
 notification prompt on launch that spends the single iOS dialog, is wrong in
-the same silent way. The views are not tested; a wrong layout is visible.
+the same silent way. A map tap matched against the wrong ids picks nothing, and
+the map reads as one without tap selection. The views are not tested; a wrong
+layout is visible.

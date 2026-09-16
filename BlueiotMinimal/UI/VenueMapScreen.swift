@@ -7,7 +7,8 @@
 //  `ProximiioMapView` draws the venue style, the floors, the amenities, the
 //  position marker and the route, split so the floor on screen shows its own
 //  segment. This screen owns the picked place, the `computeRoute` call and the
-//  `setRoute` hand-over. The recentre button calls the library's follow camera.
+//  `setRoute` hand-over. A place is picked in the search sheet or by a tap on
+//  the map. The recentre button calls the library's follow camera.
 //  Turn-by-turn is enabled with one assignment (`guidanceRules`); only the
 //  instruction text belongs to the app.
 //
@@ -85,6 +86,10 @@ struct VenueMapScreen: View {
             // whether the visitor is off the route and whether they have arrived.
             // Guidance is off by default.
             session.guidanceRules = .venueWalk
+            // The session reports the feature ids under a tap on a POI glyph or
+            // label, on the main thread. A tap does not release the follow camera;
+            // only a pan, pinch or rotate does.
+            session.onFeatureTap = { identifiers, _ in pickTapped(identifiers) }
             // A local cache read, not a download: `Venue.start` fetched the features.
             places = VenuePOI.all(in: await venue.sdk.features())
         }
@@ -210,6 +215,18 @@ struct VenueMapScreen: View {
         .disabled(session.position == nil)
         .accessibilityLabel("Centre on me")
         .accessibilityAddTraits(session.cameraMode == .free ? [] : .isSelected)
+    }
+
+    /// Picks a tapped place through `route(to:)`, the call a search pick makes:
+    /// same destination, route and search-row text. A tap that hits no place
+    /// changes nothing and does not clear the current pick. A tap during a visit
+    /// is ignored: the single-destination search is not shown then, and
+    /// `JourneyNavigator` owns the route.
+    private func pickTapped(_ identifiers: [String]) {
+        guard journey == nil,
+              let place = VenuePOI.place(under: identifiers, in: places)
+        else { return }
+        Task { await route(to: place) }
     }
 
     /// Computes the route from the current wristband position to the picked
