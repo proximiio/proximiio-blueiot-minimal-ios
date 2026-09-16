@@ -2,13 +2,13 @@
 //  JourneyStore.swift
 //  BlueiotMinimal
 //
-//  Where a visit is kept between launches, and how a picked place becomes a stop.
+//  Persistence of the visit between launches, and the conversion of a picked
+//  place into a stop.
 //
-//  `Journey` is `Codable` and each stop carries its own state, so writing it whenever
-//  it changes is the whole of "my afternoon survived the app being closed": the stops
-//  come back with the ones already seen marked, and the navigator recomputes the leg
-//  from the first fix after launch. A visitor who closed the app in one gallery is
-//  routed onward from wherever they re-open it.
+//  `Journey` is `Codable` and each stop carries its state. Writing it on every
+//  change restores the stops and their states on the next launch. The navigator
+//  recomputes the leg from the first fix after launch, so the visit resumes from
+//  the visitor's current position.
 //
 import Foundation
 import ProximiioMap
@@ -16,8 +16,8 @@ import ProximiioMap
 enum JourneyStore {
     private static let key = "BlueiotMinimal.journey"
 
-    /// The visit in progress, or `nil` when there is none. A value written by an
-    /// older build that no longer decodes is treated as none rather than as a crash.
+    /// The visit in progress, or `nil` when there is none. A value from an older
+    /// build that no longer decodes is treated as `nil`, not as an error.
     static func load(from store: UserDefaults = .standard) -> Journey? {
         guard let data = store.data(forKey: key),
               let journey = try? JSONDecoder().decode(Journey.self, from: data),
@@ -26,8 +26,8 @@ enum JourneyStore {
         return journey
     }
 
-    /// `nil`, or a journey with no stops, clears it — so ending a visit is the same
-    /// call as saving one.
+    /// `nil` or a journey with no stops removes the stored value, so ending a
+    /// visit uses the same call as saving one.
     static func save(_ journey: Journey?, to store: UserDefaults = .standard) {
         guard let journey, !journey.stops.isEmpty,
               let data = try? JSONEncoder().encode(journey)
@@ -40,9 +40,8 @@ enum JourneyStore {
 }
 
 extension JourneyStop {
-    /// A stop is a place the visitor picked. The POI's own id is used both as the
-    /// stop id and as `poiID`, so a journey read back off disk still points at
-    /// somewhere in the venue rather than at a coordinate nobody can name.
+    /// A stop is a picked place. The POI id is used as both the stop id and
+    /// `poiID`, so a stored journey still refers to a venue feature.
     init(_ poi: VenuePOI) {
         self.init(
             id: poi.id,

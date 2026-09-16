@@ -2,19 +2,18 @@
 //  DiagnosticsTests.swift
 //  BlueiotMinimalTests
 //
-//  The diagnostics log travels: support asks for the folder and someone sends it.
-//  The SDK strips the credential shapes it knows on its own; the two values this
-//  app is built with are stripped only because `VenueConfiguration.secrets` hands
-//  them to the recorder — and a line that carries one verbatim looks exactly like
-//  a line that does not.
+//  The diagnostics log is exported to support. The SDK redacts the credential
+//  shapes it recognises; the two build-time values are redacted only because
+//  `VenueConfiguration.secrets` passes them to the recorder. A line that carries
+//  one verbatim produces no visible error.
 //
 import Proximiio
 import XCTest
 
 final class DiagnosticsTests: XCTestCase {
 
-    /// The two real values' shape — long, and with no `token=` or `Bearer` in front
-    /// of them, so nothing but the handed-over value itself can catch them.
+    /// Shaped like the real values: long, with no `token=` or `Bearer` prefix, so
+    /// only the passed-in value itself can match them.
     private let secrets = ["SENTINEL-APP-TOKEN-8f2a1c", "SENTINEL-RELAY-TOKEN-1c04e7"]
     private let directory = FileManager.default.temporaryDirectory
         .appendingPathComponent("diagnostics-\(UUID().uuidString)", isDirectory: true)
@@ -25,7 +24,7 @@ final class DiagnosticsTests: XCTestCase {
     }
 
     func testTheLogNeverCarriesAConfiguredSecretVerbatim() async throws {
-        // One recording per process, and the app's own is running in this test host.
+        // One recording per process; the app's own recording runs in this test host.
         await Proximiio.stopDiagnosticsRecording()
         try await Proximiio.startDiagnosticsRecording(.init(directory: directory, additionalSecrets: secrets))
         Proximiio.recordDiagnosticsEvent(.state, "relay answered 401 for \(secrets[1]) under \(secrets[0])")

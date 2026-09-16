@@ -2,16 +2,15 @@
 //  LocationPrompt.swift
 //  BlueiotMinimal
 //
-//  The other thing this app asks a person for — once, between the wristband and
-//  the map.
+//  Location prompt, shown once between the wristband prompt and the map.
 //
-//  Not for the position: the venue's anchors place the wristband, and the phone's
-//  location never enters it. It is asked for because iOS suspends a backgrounded
-//  app after 30 seconds unless a location session is running, and CoreLocation
-//  runs none unauthorised — so with the question unanswered, the dot stops the
-//  moment the phone goes in a pocket. "While Using the App" is enough; nothing here
-//  asks for Always. The two flags that go with it are in `Venue.swift`, the
-//  background mode and the purpose string in `project.yml`.
+//  The phone's location is not used for positioning; the venue's anchors position
+//  the wristband. Location authorization is required because iOS suspends a
+//  backgrounded app after 30 seconds unless a location session is running, and
+//  CoreLocation runs none without authorization. Without it, positioning stops
+//  when the app leaves the screen. "While Using the App" is sufficient; the app
+//  does not request Always. The related settings are `runsInBackground` in
+//  `Venue.swift` and the background mode and purpose string in `project.yml`.
 //
 import CoreLocation
 import SwiftUI
@@ -29,8 +28,8 @@ struct LocationPrompt: View {
         }
     }
 
-    /// Shown only while iOS has never been asked. A refusal is an answer: the map
-    /// works on screen without it, and nobody is asked twice.
+    /// `true` only while the status is `.notDetermined`. A denial is not asked
+    /// about again; the map works in the foreground without location.
     static func isOwed(_ status: CLAuthorizationStatus) -> Bool {
         status == .notDetermined
     }

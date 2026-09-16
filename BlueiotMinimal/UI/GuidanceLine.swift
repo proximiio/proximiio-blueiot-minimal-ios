@@ -2,15 +2,12 @@
 //  GuidanceLine.swift
 //  BlueiotMinimal
 //
-//  TURN-BY-TURN, IN ONE LINE.
+//  One-line turn-by-turn instruction.
 //
-//  The map library follows whatever route it is drawing and republishes a
-//  `RouteGuidance` on every fix — which manoeuvre is next, how far is still to walk
-//  to it, whether the visitor left the corridor, whether they arrived. One value
-//  rather than six properties, so a view that reads four of them re-renders once.
-//
-//  A single route and a journey leg produce the same value, which is why this is a
-//  view of its own rather than two copies of the same sentence.
+//  The map library follows the route it draws and publishes a `RouteGuidance` on
+//  every position fix: the next manoeuvre, the distance to it, whether the
+//  visitor is off the route and whether they have arrived. A single route and a
+//  journey leg publish the same type, so both use this view.
 //
 import ProximiioMap
 import SwiftUI
@@ -27,16 +24,15 @@ struct GuidanceLine: View {
         }
     }
 
-    /// One sentence for one fix, in the order a walker needs them: arrival ends the
-    /// walk, leaving the route interrupts it, and otherwise it is the turn in hand
-    /// and the metres still to walk to it.
+    /// One sentence for one fix. Arrival takes precedence, then off-route, then
+    /// the next manoeuvre with the remaining distance in metres.
     ///
-    /// `distanceToManoeuvreMeters` is the number that shrinks —
-    /// `RouteManoeuvre.legMeters` is the planned length of the leg and never moves.
+    /// `distanceToManoeuvreMeters` decreases as the visitor walks;
+    /// `RouteManoeuvre.legMeters` is the planned leg length and does not change.
     ///
-    /// Leaving the route is said, not acted on. The flag latches after three fixes
-    /// beyond twelve metres and clears itself on the first fix back inside, so a
-    /// detector of this app's own could only disagree with the one already running.
+    /// Leaving the route is reported, not acted on. `isOffRoute` becomes `true`
+    /// after three fixes more than twelve metres from the route and returns to
+    /// `false` on the first fix back on it. The app adds no detector of its own.
     static func sentence(for guidance: RouteGuidance) -> String {
         if guidance.hasArrived { return "You have arrived." }
         if guidance.isOffRoute { return "You have left the route." }
@@ -44,10 +40,9 @@ struct GuidanceLine: View {
         return "\(instruction(for: guidance.manoeuvre?.kind)) · \(metres) m"
     }
 
-    /// `RouteManoeuvre.Kind` carries no display strings, and neither does the SDK's
-    /// `RouteInstruction.Kind` underneath it: a library that shipped English would be
-    /// shipping the wrong language to most venues. These sentences are the app's, and
-    /// this is the one function to reach `NSLocalizedString` into.
+    /// `RouteManoeuvre.Kind` and the SDK's `RouteInstruction.Kind` beneath it
+    /// carry no display strings. The sentences below belong to the app; localise
+    /// them here with `NSLocalizedString`.
     static func instruction(for kind: RouteManoeuvre.Kind?) -> String {
         switch kind {
         case .turnLeft: "Turn left"
@@ -56,8 +51,8 @@ struct GuidanceLine: View {
         case .turnRight: "Turn right"
         case .turnSlightRight: "Bear right"
         case .turnSharpRight: "Turn sharp right"
-        // The changer the route actually uses, so the sentence and the pin on the
-        // map name the same thing: "elevator", "escalator", "staircase", "ramp".
+        // `featureType` is the level changer the route uses ("elevator",
+        // "escalator", "staircase", "ramp"); the map marks the same feature.
         case .levelChange(let change):
             "Take the \(change.featureType) to level \(MapLevelFormat.trimmed(change.toLevel))"
         case .arrive: "Arrive"

@@ -2,28 +2,25 @@
 //  POISearchSheet.swift
 //  BlueiotMinimal
 //
-//  Search the venue's places; pick one, or pick several. The pick is the only thing
-//  that leaves here.
+//  Search over the venue's places; picks one place or several. Only the pick
+//  leaves this view.
 //
-//  There is one search in this app and this is it. "Where to?" and "plan my
-//  afternoon" are the same list, the same matching and the same rows — only the row's
-//  accessory and the way the sheet closes differ, which is a parameter rather than a
-//  second screen.
+//  The single-destination search and the visit planner share this sheet. The
+//  list, the matching and the rows are the same; the row accessory and the
+//  dismissal differ by parameter.
 //
-//  This is where a real product diverges first — categories, favourites, amenity
-//  icons, "nearest toilet". All of it belongs in this file's place, and none of it
-//  belongs in the SDK.
+//  Product-specific search features (categories, favourites, amenity icons,
+//  nearest amenity) belong in this file, not in the SDK.
 //
 import ProximiioMap
 import SwiftUI
 
 struct POISearchSheet: View {
     let pois: [VenuePOI]
-    /// Several places instead of one, in the order they are tapped, because that
-    /// order is the order the visitor walks.
+    /// Picks several places in tap order. The tap order is the journey order.
     var allowsMultiple = false
-    /// Adding to a visit that is already running rather than planning a new one.
-    /// Same list, same multi-select, the words that screen needs.
+    /// Adds to a running visit instead of planning a new one. Same list and
+    /// multi-select; different title and button label.
     var adds = false
     let onPick: ([VenuePOI]) -> Void
 
@@ -46,9 +43,9 @@ struct POISearchSheet: View {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(poi.title)
                                 .foregroundStyle(.primary)
-                            // `MapLevelFormat` is the map library's — the same
-                            // rendering its own floor picker uses, so "1" and "1.5"
-                            // read the same in both places.
+                            // `MapLevelFormat` is the map library's level formatter, also
+                            // used by its floor picker, so "1" and "1.5" render
+                            // identically in both.
                             Text("Level \(MapLevelFormat.trimmed(poi.level))")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
@@ -89,7 +86,7 @@ struct POISearchSheet: View {
         }
     }
 
-    /// Tapping a picked place again takes it back out, and the numbers close up.
+    /// Tapping a picked place again removes it; the later numbers shift down.
     private func toggle(_ poi: VenuePOI) {
         if let stop = picked.firstIndex(of: poi) {
             picked.remove(at: stop)

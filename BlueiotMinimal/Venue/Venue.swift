@@ -2,19 +2,22 @@
 //  Venue.swift
 //  BlueiotMinimal
 //
-//  THE WHOLE OF THIS APP'S POSITIONING, AND THE ONE THING IT DOES WITH IT UNASKED.
+//  Positioning: SDK start, cloud relay attachment for one wristband, and a local
+//  notification per geofence event.
 //
-//  The venue's anchors locate the wristband and report to a Proximi.io cloud relay;
-//  the phone scans nothing. `ProximiioConfiguration.relayOnly(token:runsInBackground:)`
-//  is the preset for exactly that shape of app — it turns the SDK's own iBeacon,
-//  Eddystone and UWB sources off, so there is no radio to tune. The rest is two calls,
-//  start the SDK and attach the relay, and a notification per geofence crossed.
+//  The venue's BlueIoT anchors locate the wristband and report to a Proximi.io
+//  cloud relay; the phone scans nothing.
+//  `ProximiioConfiguration.relayOnly(token:runsInBackground:)` is the preset for
+//  this integration: it disables the SDK's iBeacon, Eddystone and UWB sources.
+//  The rest is two calls, start the SDK and attach the relay, and one
+//  notification per geofence event.
 //
-//  POSITIONING CARRIES ON IN A POCKET. That takes four things, and each one missing
-//  looks the same — the dot stops 30 seconds after the screen locks, as if the
-//  relay had died: `runsInBackground: true` on the SDK configuration and again on
-//  the relay provider's (both below); the `location` background mode and its
-//  purpose string (`project.yml`); and location authorization (`LocationPrompt`).
+//  Background positioning requires four settings. Each one missing has the same
+//  symptom: positioning stops 30 seconds after the screen locks, as if the relay
+//  had disconnected. `runsInBackground: true` on the SDK configuration and on
+//  the relay provider configuration (both in this file); the `location`
+//  background mode and its purpose string (`project.yml`); and location
+//  authorization (`LocationPrompt`).
 //
 import Foundation
 import Observation
@@ -25,16 +28,16 @@ import UserNotifications
 @MainActor
 final class Venue {
 
-    /// The started SDK. `VenueMapScreen` hands this to the map, which reads the
-    /// venue, the floors and the live position off it.
+    /// The started SDK. `VenueMapScreen` passes it to the map, which reads the
+    /// venue, the floors and the live position from it.
     let sdk: Proximiio
 
-    /// Raised by the first geofence note that would have shown while iOS has never
-    /// been asked about notifications; `NotificationPrompt` lowers it. Never on launch.
+    /// Set by the first geofence event that arrives while notification
+    /// authorization is `.notDetermined`; `NotificationPrompt` clears it. Never set on launch.
     var owesNotificationAsk = false
 
-    /// So a second `follow(_:)` can take the first one down. Only the name is kept —
-    /// detaching is by name.
+    /// The name of the attached provider, kept so a later `follow(_:)` can detach
+    /// it. Detaching is by name.
     private var attachedProvider: String?
 
     private init(sdk: Proximiio) {
@@ -42,26 +45,27 @@ final class Venue {
         announceGeofences()
     }
 
-    /// The SDK, configured for this shape of app. Apart from `start` so a test can
-    /// read the flag off it — `runsInBackground` defaults to `false`.
+    /// The SDK configuration. Separate from `start` so a test can read the
+    /// background setting from it. `runsInBackground` defaults to `false`.
     static func configuration(token: String) -> ProximiioConfiguration {
         .relayOnly(token: token, runsInBackground: true)
     }
 
-    /// Asks for location, authenticates, starts, and downloads the venue.
+    /// Requests location authorization, authenticates, starts positioning and
+    /// downloads the venue.
     ///
-    /// Four awaits, in this order, and none of them is optional:
-    ///  1. `requestPermissions()` is the system prompt behind `LocationPrompt`. iOS
-    ///     asks once; an answered question returns at once with its answer, so a
-    ///     returning visitor pays nothing here.
-    ///  2. `authenticate()` validates the token and runs the first sync — which is
-    ///     what fills the floors the SDK resolves relay fixes against.
-    ///  3. `start()` starts positioning. Under `relayOnly` that means the engine and
-    ///     the keep-alive location session; the fixes arrive once a provider is
+    /// The four calls run in this order and none is optional:
+    ///  1. `requestPermissions()` shows the system location dialog behind
+    ///     `LocationPrompt`. iOS asks once; an answered request returns
+    ///     immediately with the stored answer.
+    ///  2. `authenticate()` validates the token and runs the first sync, which
+    ///     loads the floors the SDK resolves relay fixes against.
+    ///  3. `start()` starts positioning. Under `relayOnly` that is the engine and
+    ///     the keep-alive location session; fixes arrive once a provider is
     ///     attached.
-    ///  4. `loadRouteNetwork()` downloads the venue's GeoJSON: the POIs this app
-    ///     searches *and* the path network `computeRoute` walks, cached locally, so
-    ///     it is the one network call wayfinding needs.
+    ///  4. `loadRouteNetwork()` downloads the venue GeoJSON: the POIs this app
+    ///     searches and the path network `computeRoute` uses, cached locally. It
+    ///     is the only network call wayfinding needs.
     static func start(token: String) async throws -> Venue {
         let sdk = try Proximiio(configuration: configuration(token: token))
         _ = await sdk.requestPermissions()
@@ -73,15 +77,14 @@ final class Venue {
 
     /// Points positioning at one wristband.
     ///
-    /// Safe to call again with a different band: the previous provider is detached
-    /// first, so changing the id is a re-attach rather than a restart.
+    /// Can be called again with a different id: the previous provider is
+    /// detached first, so a change is a re-attach, not an SDK restart.
     ///
-    /// WHICH STOREY A FIX LANDS ON is not this app's arithmetic. An engine floor
-    /// number *is* the Proximi.io floor level, and the SDK already syncs every floor
-    /// with its level, so it derives the number-to-floor table itself and tells you
-    /// in the log when a fix names a number the venue has no floor for. Pass no
-    /// `floorNoMap` and none of that happens: a table you supply switches derivation
-    /// off.
+    /// Floor resolution is done by the SDK. It resolves engine floor numbers
+    /// against the floor levels it synced, shifting numbers at and above ground
+    /// by `engineGroundFloorNumber`, and logs a fix whose number matches no
+    /// floor. Do not pass `floorNoMap`: a supplied table switches that
+    /// derivation off.
     func follow(_ wristband: WristbandID) async {
         if let attachedProvider {
             await sdk.detachPositionProvider(named: attachedProvider)
@@ -95,13 +98,14 @@ final class Venue {
             endpoint: endpoint,
             token: VenueConfiguration.relayToken,
             tagID: wristband.canonical,
-            // Without this the SDK pauses the provider on backgrounding, whatever
-            // the process itself is allowed to do.
+            // Without this the SDK pauses the provider on backgrounding, regardless
+            // of the process's own background permission.
             runsInBackground: true
         )
-        // The one thing the SDK cannot know: this venue's LocalSense calls the ground
-        // floor 1 where Proximi.io calls it level 0. Delete this line, and
-        // `BLUEIOT_GROUND_FLOOR_NO` with it, the day the deployment is renumbered.
+        // A LocalSense engine numbers floors from 1 with no 0 and basements
+        // negative; Proximi.io numbers the ground floor 0. `engineGroundFloorNumber
+        // = 1` states that convention; the SDK applies the shift above ground only
+        // (engine 1 is level 0, engine 2 is level 1, engine -1 stays level -1).
         configuration.engineGroundFloorNumber = VenueConfiguration.groundFloorNumber
 
         let provider = BlueiotCloudRelayPositionProvider(configuration: configuration)
@@ -110,9 +114,10 @@ final class Venue {
         await sdk.attachPositionProvider(provider)
     }
 
-    /// Every geofence entered or left — drawn in the Proximi.io Portal, synced by
-    /// `authenticate()` — is one notification, on screen or in a pocket. The SDK applies
-    /// enter/exit tolerance already, so: one event, one note. Privacy zones are not announced.
+    /// Posts one local notification per geofence enter or exit, in the foreground
+    /// and in the background. The geofences are defined in Proximi.io Portal and
+    /// synced by `authenticate()`. The SDK applies its enter/exit tolerance; the
+    /// app adds no filtering. Privacy zones are not announced.
     private func announceGeofences() {
         Task {
             for await event in await sdk.geofenceEvents() {
@@ -129,7 +134,7 @@ final class Venue {
         let note = NotificationPrompt.note(name: name, entered: entered)
         let center = UNUserNotificationCenter.current()
         let status = await center.notificationSettings().authorizationStatus
-        // The first note that would have shown is the moment to ask: the visitor is standing in it.
+        // Raises the prompt on the first event while authorization is undetermined.
         if NotificationPrompt.isOwed(status) { owesNotificationAsk = true }
         guard status == .authorized else {
             Proximiio.recordDiagnosticsEvent(.state, "\(note.logLine) · not authorized")
@@ -139,7 +144,7 @@ final class Venue {
         content.title = note.title
         content.body = note.body
         content.sound = .default
-        // A fresh identifier per event, so two notes never replace each other.
+        // A new identifier per event, so notifications do not replace each other.
         try? await center.add(UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil))
         Proximiio.recordDiagnosticsEvent(.state, "\(note.logLine) · notified")
     }

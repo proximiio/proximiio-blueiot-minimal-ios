@@ -2,16 +2,13 @@
 //  JourneyBar.swift
 //  BlueiotMinimal
 //
-//  A VISIT: several places, in an order, one leg at a time.
+//  Journey UI: the active stop, the remaining visit and the controls that change
+//  the plan.
 //
-//  `JourneyNavigator` owns the walking. It computes each leg from the visitor's live
-//  position, draws and follows it through the same session the map is already using,
-//  re-routes it when they wander, and measures what is left. None of that is here.
-//
-//  What is here is the visitor's side: which stop is in hand, how much of the visit
-//  is left, and the handful of buttons that change the plan. The library never
-//  reorders a visit on its own, and neither does this screen — it proposes, and a tap
-//  applies.
+//  `JourneyNavigator` owns the walking. It computes each leg from the live
+//  position, draws and follows it through the map session, re-routes when the
+//  visitor leaves the leg and measures what remains. Neither the library nor this
+//  view reorders a journey on its own: a reorder is proposed, and a tap applies it.
 //
 import Proximiio
 import ProximiioMap
@@ -19,12 +16,12 @@ import SwiftUI
 
 struct JourneyBar: View {
     let places: [VenuePOI]
-    /// Called when the visit is over, so the map screen can put its search bar back.
+    /// Called when the visit ends; the map screen restores its search bar.
     let onEnd: () -> Void
 
     @StateObject private var navigator: JourneyNavigator
-    /// The detours on offer, named. Rebuilt only when the set of nearest places
-    /// changes; empty is survivable and shows no button.
+    /// Detour offers by amenity. Rebuilt when the set of nearest places changes.
+    /// Empty shows no button.
     @State private var detours: [Detour] = []
     @State private var isShowingPlan = false
 
@@ -51,30 +48,31 @@ struct JourneyBar: View {
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
         .padding(16)
         .task {
-            // Starting is one call. Nothing is drawn until the first fix, because the
-            // leg is computed from where the visitor actually is.
+            // `start()` draws nothing until the first fix; the leg is computed
+            // from the live position.
             await navigator.start()
-            // The one extra download in the app, and only for a visitor who started
-            // a visit. Store-first: with a catalogue stored it reaches no network and
-            // cannot throw, and failing it costs the detours and nothing else.
+            // The only additional download in the app, made when a visit starts.
+            // `amenities()` reads the local store first: with a stored catalogue
+            // it makes no network request and does not throw. On failure only
+            // the detour offers are missing.
             _ = try? await navigator.session.sdk.amenities()
             detours = await offers()
         }
         .task(id: navigator.session.position?.coordinate) { detours = await offers() }
         .onDisappear { navigator.end() }
-        // `Journey` is Codable and carries each stop's state, so this one line is the
-        // whole of "the visit survived the app being closed".
+        // `Journey` is `Codable` and each stop carries its state. Saving on every
+        // change is what restores the visit on the next launch.
         .onChange(of: navigator.journey) { JourneyStore.save($1) }
         .sheet(isPresented: $isShowingPlan) {
             JourneyPlanSheet(navigator: navigator, places: places, onEnd: onEnd)
         }
     }
 
-    /// The stop in hand, and what is left of the visit.
+    /// The active stop and the remaining visit.
     ///
-    /// `overview` is measured as soon as the plan changes, so the total is a total
-    /// rather than a number that fills in as the visitor walks — and a leg routing
-    /// refused is named rather than quietly left out of the sum.
+    /// `overview` is measured when the plan changes, so the total is complete
+    /// before the visitor walks. A leg the router refused is counted as
+    /// unreachable rather than omitted from the sum.
     @ViewBuilder private var header: some View {
         if let stop = navigator.activeStop {
             HStack(spacing: 8) {
@@ -93,9 +91,9 @@ struct JourneyBar: View {
             HStack(spacing: 8) {
                 Text("Your visit is done.")
                 Spacer(minLength: 0)
-                // Adding a stop revives a finished visit — the library makes the new
-                // one active and draws its leg — so the way into the plan, and to the
-                // "+" in it, must not disappear with the last stop.
+                // Adding a stop to a finished journey makes it active again: the
+                // library activates the new stop and draws its leg. The plan
+                // button therefore stays visible after the last stop.
                 planButton
                 Button("Finish", action: onEnd)
             }
@@ -118,8 +116,7 @@ struct JourneyBar: View {
             "\(Int(overview.remainingMeters.rounded())) m",
             "\(max(1, Int((overview.etaSeconds / 60).rounded()))) min",
         ]
-        // The library never drops a stop it could not route to, so saying so is this
-        // app's job rather than a silently shorter list.
+        // The library keeps a stop it cannot route to; the count is shown here.
         if !overview.unreachableStopIDs.isEmpty {
             parts.append("\(overview.unreachableStopIDs.count) unreachable")
         }
@@ -129,9 +126,8 @@ struct JourneyBar: View {
     private var buttons: some View {
         HStack(spacing: 16) {
             if navigator.hasArrived {
-                // The one thing a visit deliberately does not do by itself. A visitor
-                // stands in front of an exhibit for a length of time nobody can
-                // guess, so the rule is `.manual` and this is what moves them on.
+                // Arrival does not advance the journey: the advance rule is
+                // `.manual`. This button calls `advance()`.
                 Button("Continue") { Task { await navigator.advance() } }
                     .buttonStyle(.borderedProminent)
                     .controlSize(.small)
@@ -147,9 +143,9 @@ struct JourneyBar: View {
         .font(.subheadline)
     }
 
-    /// "Something else first." `detour(to:)` puts a stop in front of the one being
-    /// walked to and routes there now; the plan resumes afterwards from wherever the
-    /// visitor ends up, not from where they stepped out.
+    /// `detour(to:)` inserts a stop before the active one and routes to it
+    /// immediately. After the detour the plan resumes from the visitor's current
+    /// position.
     @ViewBuilder private var detourMenu: some View {
         if !detours.isEmpty {
             Menu("Stop off") {
@@ -168,11 +164,10 @@ struct JourneyBar: View {
         let poi: VenuePOI
     }
 
-    /// WHICH kinds of place a venue has is the app's question —
-    /// ``VenuePOI/nearestByAmenity(in:from:)`` reads them off the venue's own data.
-    /// WHAT each kind is called is the SDK's: one stored row per amenity id, local
-    /// and offline. An id the catalogue cannot name is left out rather than shown as
-    /// a uuid, and this app keeps no titles of its own.
+    /// Builds the detour offers. The kinds of place come from the venue data
+    /// (``VenuePOI/nearestByAmenity(in:from:)``). The name of each kind comes
+    /// from the SDK amenity store: one local row per amenity id, read offline.
+    /// An id the store cannot name is omitted. The app stores no titles of its own.
     private func offers() async -> [Detour] {
         guard let here = navigator.session.position else { return [] }
         var detours: [Detour] = []
@@ -187,7 +182,7 @@ struct JourneyBar: View {
     }
 }
 
-/// The plan itself: what is left, in what order, and the two ways to change it.
+/// The plan: the remaining stops in order, with reordering and adding.
 struct JourneyPlanSheet: View {
     @ObservedObject var navigator: JourneyNavigator
     let places: [VenuePOI]
@@ -196,7 +191,7 @@ struct JourneyPlanSheet: View {
     @State private var proposal: JourneyOrderProposal?
     @State private var showsWholePlan = false
     @State private var isAdding = false
-    /// What the last "+" could not add. Said once, and replaced by the next one.
+    /// The places the last add could not insert. Replaced by the next add.
     @State private var note: String?
     @Environment(\.dismiss) private var dismiss
 
@@ -236,9 +231,8 @@ struct JourneyPlanSheet: View {
                 }
 
                 Section {
-                    // Opt in, and off by default: the leg in hand is what a visitor
-                    // is walking, and the rest of the afternoon under it is a choice
-                    // rather than a default.
+                    // Off by default. When on, the remaining legs are drawn under
+                    // the active leg (`journeyOverlayStyle = .venue`).
                     Toggle("Show the whole plan on the map", isOn: $showsWholePlan)
                     Button("End the visit", role: .destructive) {
                         dismiss()
@@ -257,10 +251,10 @@ struct JourneyPlanSheet: View {
                 }
                 ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
             }
-            // The same search sheet the visit was planned in. `add` puts each pick
-            // after everything still to be walked, leaving the leg in hand alone, and
-            // answers `false` for one the plan already holds — which is said rather
-            // than dropped, because a place that did not appear is a bug from here.
+            // The same search sheet used to plan the visit. `add` appends each pick
+            // after the remaining stops and leaves the active leg unchanged. It
+            // returns `false` for a stop the journey already holds; those are
+            // listed in `note` rather than dropped.
             .sheet(isPresented: $isAdding) {
                 POISearchSheet(pois: places, allowsMultiple: true, adds: true) { picked in
                     Task {
@@ -275,11 +269,10 @@ struct JourneyPlanSheet: View {
                     }
                 }
             }
-            // Measures every walk between the remaining stops and returns a value;
-            // it never applies itself. Re-measured whenever those stops change,
-            // because a proposal describes the order it was measured against and
-            // `apply` ignores one that no longer does — a button that silently does
-            // nothing is worse than no button.
+            // `proposeOrder()` measures the remaining stops and returns a proposal;
+            // it does not apply it. A proposal describes the order it was measured
+            // against, and `apply` ignores one that no longer matches, so it is
+            // re-measured whenever the remaining stops change.
             .task(id: navigator.reorderableStops.map(\.id)) {
                 proposal = await navigator.proposeOrder()
             }
@@ -321,8 +314,8 @@ struct JourneyPlanSheet: View {
         guard let first = source.first else { return }
         let stops = navigator.reorderableStops
         guard first < stops.count else { return }
-        // `onMove` gives the insertion point in the list before the row is taken out;
-        // `move(stopID:toIndex:)` wants the index it ends up at.
+        // `onMove` passes the insertion index before the row is removed;
+        // `move(stopID:toIndex:)` takes the final index.
         let index = destination > first ? destination - 1 : destination
         let stopID = stops[first].id
         Task { await navigator.move(stopID: stopID, toIndex: index) }

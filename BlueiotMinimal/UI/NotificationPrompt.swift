@@ -2,11 +2,11 @@
 //  NotificationPrompt.swift
 //  BlueiotMinimal
 //
-//  The third thing this app asks a person for, and the only one not asked on the
-//  way in. iOS grants one notification prompt per install, so it is not spent on a
-//  launch path: this card goes up on the first geofence note `Venue` would have
-//  shown — when "what are these for" answers itself — and iOS's own prompt follows
-//  the button. A note in a pocket leaves the card waiting for the next time on screen.
+//  Notification prompt, the only one not on the launch path. iOS shows its own
+//  notification authorization dialog once per install. `Venue` raises this card
+//  on the first geofence event that would have produced a notification, and the
+//  system dialog follows the button. An event that arrives in the background
+//  leaves the card pending until the app is next in the foreground.
 //
 import SwiftUI
 import UserNotifications
@@ -28,12 +28,13 @@ struct NotificationPrompt: View {
         }
     }
 
-    /// `LocationPrompt`'s rule, for the other permission: a refusal is an answer.
+    /// Same rule as `LocationPrompt.isOwed`: `true` only while the status is `.notDetermined`.
     static func isOwed(_ status: UNAuthorizationStatus) -> Bool {
         status == .notDetermined
     }
 
-    /// The words on one note and its diagnostics line. Pure, so tested; change both.
+    /// The notification title and body and the diagnostics line for one geofence
+    /// event. Pure function, covered by tests; keep the text and the log line in step.
     static func note(name: String?, entered: Bool) -> (title: String, body: String, logLine: String) {
         let place = name.flatMap { $0.isEmpty ? nil : $0 } ?? "Unnamed area"
         return (place, entered ? "You have arrived." : "You have left.", "geofence \(entered ? "enter" : "exit") · \(place)")

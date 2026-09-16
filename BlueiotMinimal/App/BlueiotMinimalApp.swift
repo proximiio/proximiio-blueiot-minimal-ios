@@ -2,12 +2,11 @@
 //  BlueiotMinimalApp.swift
 //  BlueiotMinimal
 //
-//  THE WHOLE APP, IN ORDER: ask for the wristband, ask for location, start the
-//  SDK, show the map — and ask for notifications on the first place worth one.
+//  App entry point. Launch order: wristband prompt, location prompt, SDK start,
+//  map. The notification prompt is raised later, on the first geofence event.
 //
-//  Apart from the diagnostics log, nothing else happens at this level. There is no tab bar, no onboarding flow and
-//  no settings — a visitor is handed a band, types the number on it once, answers
-//  one location prompt, and is on the map. Your product's screens go where
+//  This level owns the diagnostics log and the launch order only. There is no
+//  tab bar, onboarding flow or settings screen. Add product screens where
 //  `VenueMapScreen` is built.
 //
 import CoreLocation
@@ -19,11 +18,12 @@ struct BlueiotMinimalApp: App {
     @Environment(\.scenePhase) private var scenePhase
 
     init() {
-        // The SDK's diagnostics log — the one thing support can ask a visitor for
-        // (README, "The diagnostics log"). First statement in the app, in a `Task`
-        // because the call is async and `init` is not: until it returns, lines are
-        // dropped. If there is nowhere to write, the app runs on without a log;
-        // there is nothing a visitor could do about it.
+        // Starts the SDK diagnostics log (README, "The diagnostics log"). This is
+        // the first statement in the app: lines emitted before the call returns
+        // are dropped. The call is async and `init` is not, so it runs in a
+        // `Task`. `capturesSDKLog: true` includes the SDK's own log lines (fixes,
+        // floors, relay state, warnings). If the log cannot be written, the app
+        // runs without one.
         Task {
             try? await Proximiio.startDiagnosticsRecording(
                 .init(capturesSDKLog: true, additionalSecrets: VenueConfiguration.secrets)
@@ -33,7 +33,7 @@ struct BlueiotMinimalApp: App {
 
     var body: some Scene {
         WindowGroup { RootView() }
-            // The one thing the SDK cannot see from inside: when the app left the screen.
+            // Records scene transitions in the diagnostics log; the SDK does not observe them itself.
             .onChange(of: scenePhase) { _, phase in
                 guard phase != .inactive else { return }
                 Proximiio.recordDiagnosticsEvent(.state, "scene: \(phase == .background ? "background" : "foreground")")
@@ -41,14 +41,13 @@ struct BlueiotMinimalApp: App {
     }
 }
 
-/// First run asks for the wristband, then for location; every run after that goes
-/// straight to the map.
+/// Shows the wristband prompt and then the location prompt on the first run.
+/// Later runs open the map directly.
 struct RootView: View {
-    /// Read from the store on the first body evaluation, so a returning visitor
-    /// never sees the prompt.
+    /// Loaded once from `WristbandStore`. A stored id skips the prompt.
     @State private var wristband = WristbandStore.load()
-    /// Likewise read once: iOS remembers the answer, so this is `true` exactly
-    /// until the first time `LocationPrompt` is answered.
+    /// Read once. `true` only while location authorization is `.notDetermined`;
+    /// iOS persists the answer, so the prompt is shown at most once per install.
     @State private var owesLocationAsk = LocationPrompt.isOwed(CLLocationManager().authorizationStatus)
     @State private var venue: Venue?
     @State private var failure: String?
@@ -61,7 +60,7 @@ struct RootView: View {
                 LocationPrompt { owesLocationAsk = false }
             } else if let venue {
                 VenueMapScreen(venue: venue, wristband: wristband?.canonical ?? "", onSaveWristband: save)
-                    // The third ask, off the launch path: `Venue` raises it on the first note it would have shown.
+                    // `Venue` sets `owesNotificationAsk` on the first geofence event; the prompt is not on the launch path.
                     .sheet(isPresented: Bindable(venue).owesNotificationAsk) {
                         NotificationPrompt { venue.owesNotificationAsk = false }
                             .interactiveDismissDisabled()
@@ -76,11 +75,11 @@ struct RootView: View {
                 ProgressView()
             }
         }
-        // Keyed on the wristband: saving a different one re-runs this, and
-        // `connect()` re-points positioning at the new band without restarting
-        // the SDK or rebuilding the map. Held at `nil` while the location ask is
-        // on screen, so the SDK — and the system prompt it raises — starts only
-        // once that screen has been answered.
+        // Keyed on the wristband: saving a different id re-runs `connect()`, which
+        // re-points positioning at the new id without restarting the SDK or
+        // rebuilding the map. The key is `nil` while `LocationPrompt` is on
+        // screen, so the SDK and the system location dialog start only after
+        // that screen is answered.
         .task(id: owesLocationAsk ? nil : wristband) { await connect() }
     }
 
@@ -93,7 +92,7 @@ struct RootView: View {
         guard let wristband else { return }
         do {
             if let venue {
-                // Already running: only the band changed.
+                // SDK already running: only the wristband changed.
                 await venue.follow(wristband)
                 return
             }

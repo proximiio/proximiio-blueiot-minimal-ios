@@ -2,13 +2,10 @@
 //  JourneyTests.swift
 //  BlueiotMinimalTests
 //
-//  The two pieces of the visit that fail silently.
-//
-//  A journey that does not survive a launch loses a visitor's afternoon without
-//  anything on screen going wrong, and an amenity query that reads the venue's data
-//  the wrong way offers a detour to nowhere — or, worse, offers nothing and looks
-//  like a venue with no toilets. Neither shows up in a screenshot. The SwiftUI around
-//  them is not tested, because a layout that is wrong is a layout you can see.
+//  Journey persistence and the amenity query. Both fail silently: a journey that
+//  does not survive a launch is lost without an error, and an amenity query that
+//  reads the venue data wrongly offers a wrong detour or none. The SwiftUI views
+//  are not tested.
 //
 import XCTest
 @testable import BlueiotMinimal
@@ -17,7 +14,7 @@ import ProximiioMap
 
 final class JourneyPersistenceTests: XCTestCase {
 
-    /// A suite of its own, so a test never writes into the real app's defaults.
+    /// A separate suite, so a test never writes the app's defaults.
     private var store: UserDefaults!
     private let suite = "BlueiotMinimalTests.journey"
 
@@ -45,9 +42,8 @@ final class JourneyPersistenceTests: XCTestCase {
         )
     }
 
-    /// The whole point: the order AND each stop's state come back, so a visitor who
-    /// closed the app in the second gallery re-opens it in the second gallery rather
-    /// than at the front door.
+    /// The order and each stop's state are restored, so a visit resumes at the
+    /// same stop after a relaunch.
     func testRoundTripKeepsOrderAndState() throws {
         let journey = Journey(stops: [
             stop("atrium", state: .done),
@@ -69,36 +65,35 @@ final class JourneyPersistenceTests: XCTestCase {
         XCTAssertNil(JourneyStore.load(from: store))
     }
 
-    /// Ending a visit is the same call as saving one, so the next launch must not
-    /// resume the afternoon the visitor just finished.
+    /// Ending a visit is the same call as saving one; the next launch must not
+    /// resume it.
     func testEndingClears() {
         JourneyStore.save(Journey(stops: [stop("atrium")]), to: store)
         JourneyStore.save(nil, to: store)
         XCTAssertNil(JourneyStore.load(from: store))
     }
 
-    /// An empty journey is not a journey. Saving one clears rather than restoring a
-    /// bar with nothing in it.
+    /// A journey with no stops is stored as none, not restored as an empty bar.
     func testEmptyJourneyIsNotAVisit() {
         JourneyStore.save(Journey(stops: [stop("atrium")]), to: store)
         JourneyStore.save(Journey(stops: []), to: store)
         XCTAssertNil(JourneyStore.load(from: store))
     }
 
-    /// Something else wrote to the key — an older build, a different shape. Treated
-    /// as "no visit", never as a crash on launch.
+    /// A value another build wrote under the key is treated as no visit, not as
+    /// a crash on launch.
     func testUnreadableValueIsNoVisit() {
         store.set(Data("not a journey".utf8), forKey: "BlueiotMinimal.journey")
         XCTAssertNil(JourneyStore.load(from: store))
     }
 }
 
-/// `VenuePOI.nearestByAmenity` — "find me a toilet", answered off the venue's own
-/// data rather than off a list of categories somebody assumed.
+/// `VenuePOI.nearestByAmenity`: the kinds are read from the venue data, not from
+/// a fixed category list.
 final class AmenityQueryTests: XCTestCase {
 
-    /// A POI as `Proximiio.features()` returns one. Longitudes only, at this
-    /// latitude roughly 74 km per degree, so "further east" is "further away".
+    /// A POI as `Proximiio.features()` returns it. Only the longitude varies; at
+    /// this latitude one degree is about 74 km, so a larger longitude is farther away.
     private func poi(_ id: String, amenity: String?, longitude: Double) -> ProximiioFeature {
         var properties: [String: JSONValue] = [
             "type": .string("poi"),
@@ -119,8 +114,7 @@ final class AmenityQueryTests: XCTestCase {
         VenuePOI.all(in: features)
     }
 
-    /// One answer per kind, and it is the nearest one of that kind — not the first in
-    /// the array, which is the mistake that looks right in a venue with one toilet.
+    /// One result per kind, and it is the nearest, not the first in the array.
     func testNearestOfEachKind() {
         let pois = places([
             poi("far toilet", amenity: "sanitary:toilet", longitude: 17.1090),
@@ -134,9 +128,8 @@ final class AmenityQueryTests: XCTestCase {
         XCTAssertEqual(nearest["sustenance:cafe"]?.title, "cafe")
     }
 
-    /// A venue tags what it tags. Nothing here knows the word "toilet", so a venue
-    /// whose POIs are all artworks offers artworks and a venue that tags nothing
-    /// offers nothing — which is the honest answer, not an empty hard-coded list.
+    /// The kinds come from the data. A venue tagging only artworks offers
+    /// artworks; a venue tagging nothing offers nothing.
     func testKindsComeFromTheDataNotFromUs() {
         let artworks = places([
             poi("ZigZag Over Time", amenity: "bcdbffc2:artwork", longitude: 17.1020),
@@ -149,8 +142,8 @@ final class AmenityQueryTests: XCTestCase {
         XCTAssertTrue(VenuePOI.nearestByAmenity(in: [], from: here).isEmpty)
     }
 
-    /// An untagged place is still searchable and still routable — it is only not a
-    /// detour offer.
+    /// An untagged place is searchable and routable; it is only excluded from
+    /// the detour offers.
     func testUntaggedPlacesAreStillPlaces() {
         let pois = places([
             poi("a room", amenity: nil, longitude: 17.1020),

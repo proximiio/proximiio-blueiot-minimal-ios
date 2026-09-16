@@ -2,10 +2,9 @@
 //  WristbandIDTests.swift
 //  BlueiotMinimalTests
 //
-//  The spelling rule and its persistence, and nothing else. These two are worth
-//  testing because they fail silently: a wristband read one way here and another way
-//  by the relay matches nothing, and the symptom is "the dot never arrives" rather
-//  than an error. The screens are not tested — they have no logic to get wrong.
+//  The parsing rule and its persistence. Both fail silently: an id parsed
+//  differently here and by the relay matches no tag, and no position arrives.
+//  The views are not tested.
 //
 import XCTest
 @testable import BlueiotMinimal
@@ -14,14 +13,14 @@ final class WristbandIDTests: XCTestCase {
 
     // MARK: - Spelling
 
-    /// The number printed on a real band, as it reads.
+    /// The number printed on a band is read as decimal.
     func testBareNumberIsDecimal() {
         XCTAssertEqual(WristbandID(text: "1000045550")?.value, 1_000_045_550)
-        // And specifically NOT hex: 0x1000045550 would be 68_723_244_368.
+        // Not hexadecimal: 0x1000045550 would be 68_723_244_368.
         XCTAssertEqual(WristbandID(text: "5555")?.value, 5555)
     }
 
-    /// The three spellings of one tag all name it.
+    /// The three spellings of one tag parse to the same id.
     func testEverySpellingOfOneTagAgrees() {
         let decimal = WristbandID(text: "7001")
         XCTAssertEqual(WristbandID(text: "0x1B59"), decimal)
@@ -29,19 +28,19 @@ final class WristbandIDTests: XCTestCase {
         XCTAssertEqual(decimal?.value, 7001)
     }
 
-    /// Letters can only be hex, whatever case they arrive in.
+    /// Letters are hexadecimal in either case.
     func testLettersAreHex() {
         XCTAssertEqual(WristbandID(text: "3B9B7BEE")?.value, 1_000_045_550)
         XCTAssertEqual(WristbandID(text: "3b9b7bee")?.value, 1_000_045_550)
         XCTAssertEqual(WristbandID(text: "0X3B9B7BEE")?.value, 1_000_045_550)
     }
 
-    /// Pasted ids carry whitespace; that is not a typo.
+    /// Pasted ids may carry surrounding whitespace.
     func testSurroundingWhitespaceIsIgnored() {
         XCTAssertEqual(WristbandID(text: "  1000045550\n")?.value, 1_000_045_550)
     }
 
-    /// Whatever spelling came in, one goes out — decimal, the band's own.
+    /// The canonical spelling is decimal regardless of the input spelling.
     func testCanonicalSpellingIsDecimal() {
         XCTAssertEqual(WristbandID(text: "0x1B59")?.canonical, "7001")
         XCTAssertEqual(WristbandID(text: "0x1B59")?.hexadecimal, "0x1B59")
@@ -69,8 +68,8 @@ final class WristbandIDTests: XCTestCase {
         XCTAssertEqual(WristbandStore.load(from: defaults), typed)
     }
 
-    /// A value an earlier build wrote in another spelling still names the same tag,
-    /// because loading re-reads it through the rule instead of trusting characters.
+    /// A value an earlier build wrote in another spelling parses to the same tag,
+    /// because `load` re-parses it.
     func testAStoredForeignSpellingStillNamesTheSameTag() throws {
         let defaults = try freshDefaults()
         defaults.set("0x1B59", forKey: "WristbandID")
@@ -82,7 +81,7 @@ final class WristbandIDTests: XCTestCase {
         XCTAssertNil(WristbandStore.load(from: try freshDefaults()))
     }
 
-    /// A suite of its own, so a test never reads or writes the app's real store.
+    /// A separate suite, so a test never reads or writes the app's store.
     private func freshDefaults() throws -> UserDefaults {
         let name = "WristbandIDTests.\(UUID().uuidString)"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: name))
