@@ -10,6 +10,7 @@
 		06C97467677DCF7D85C49EF2 /* WristbandIDTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83F2B6D65B109417E6EE9F23 /* WristbandIDTests.swift */; };
 		099507348DA4093E05606482 /* LocationPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = 092355E744495DCCE55315AA /* LocationPrompt.swift */; };
 		18BA9322EEA4A59D0FBD0D80 /* WristbandID.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B6BD4E8F912384F45BF8B67 /* WristbandID.swift */; };
+		41C18484D7E19569EB52F5CE /* NotificationPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7B6B01E86D2FE1A3DF75521 /* NotificationPrompt.swift */; };
 		4320D9B210F9307F30386401 /* POISearchSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAE7CA172E674FD6B5A16A7A /* POISearchSheet.swift */; };
 		4FB7C10F794EE01ADA61BCBA /* JourneyBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 766868470525B50835760888 /* JourneyBar.swift */; };
 		5CE93CDAC4546E0FAD3DD449 /* BackgroundPositioningTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 106D0C7B74061BE544CC5599 /* BackgroundPositioningTests.swift */; };
@@ -26,6 +27,7 @@
 		CD5F76DA126ED4496B77F93D /* ProximiioMap in Frameworks */ = {isa = PBXBuildFile; productRef = 5764333272A1FAC95E9ED601 /* ProximiioMap */; };
 		EF10C1372AD27EFE8A78C58B /* BlueiotMinimalApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07522316905DD049DF83CDD5 /* BlueiotMinimalApp.swift */; };
 		FBAFD7FD1662DFDE4E966837 /* JourneyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C811F61C4E954A692AA12DB6 /* JourneyTests.swift */; };
+		FED082C6B05A3FDDC665D03A /* GeofenceNotificationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B333BB24371B5B046CEC74E /* GeofenceNotificationTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -47,6 +49,7 @@
 		179BD8F5566F16BCEAA72C47 /* BlueiotMinimal.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = BlueiotMinimal.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		281D4E718694C50C25B124A8 /* JourneyStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JourneyStore.swift; sourceTree = "<group>"; };
 		39D2104EFFCA3D6A4A7A99D0 /* GuidanceLine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GuidanceLine.swift; sourceTree = "<group>"; };
+		3B333BB24371B5B046CEC74E /* GeofenceNotificationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeofenceNotificationTests.swift; sourceTree = "<group>"; };
 		3B6BD4E8F912384F45BF8B67 /* WristbandID.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WristbandID.swift; sourceTree = "<group>"; };
 		3CFC1F37663CB627F86460F2 /* BlueiotMinimalTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = BlueiotMinimalTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		65F7C141BA52D64EF7B32140 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
@@ -55,6 +58,7 @@
 		807431AABAB1DD9642569D05 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		83F2B6D65B109417E6EE9F23 /* WristbandIDTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WristbandIDTests.swift; sourceTree = "<group>"; };
 		901549EE1C37770588F836E6 /* DiagnosticsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagnosticsTests.swift; sourceTree = "<group>"; };
+		A7B6B01E86D2FE1A3DF75521 /* NotificationPrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationPrompt.swift; sourceTree = "<group>"; };
 		BAE7CA172E674FD6B5A16A7A /* POISearchSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = POISearchSheet.swift; sourceTree = "<group>"; };
 		C811F61C4E954A692AA12DB6 /* JourneyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JourneyTests.swift; sourceTree = "<group>"; };
 		E185E1345ABCBCD9C8FD96E7 /* VenueConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VenueConfiguration.swift; sourceTree = "<group>"; };
@@ -100,6 +104,7 @@
 				39D2104EFFCA3D6A4A7A99D0 /* GuidanceLine.swift */,
 				766868470525B50835760888 /* JourneyBar.swift */,
 				092355E744495DCCE55315AA /* LocationPrompt.swift */,
+				A7B6B01E86D2FE1A3DF75521 /* NotificationPrompt.swift */,
 				BAE7CA172E674FD6B5A16A7A /* POISearchSheet.swift */,
 				F37F6C4BF550743EAED19A26 /* VenueMapScreen.swift */,
 				087ED37D4542CDC98070E133 /* WristbandPrompt.swift */,
@@ -121,6 +126,7 @@
 			children = (
 				106D0C7B74061BE544CC5599 /* BackgroundPositioningTests.swift */,
 				901549EE1C37770588F836E6 /* DiagnosticsTests.swift */,
+				3B333BB24371B5B046CEC74E /* GeofenceNotificationTests.swift */,
 				C811F61C4E954A692AA12DB6 /* JourneyTests.swift */,
 				83F2B6D65B109417E6EE9F23 /* WristbandIDTests.swift */,
 			);
@@ -264,6 +270,7 @@
 				4FB7C10F794EE01ADA61BCBA /* JourneyBar.swift in Sources */,
 				8B375B2115E744004EE53AC8 /* JourneyStore.swift in Sources */,
 				099507348DA4093E05606482 /* LocationPrompt.swift in Sources */,
+				41C18484D7E19569EB52F5CE /* NotificationPrompt.swift in Sources */,
 				4320D9B210F9307F30386401 /* POISearchSheet.swift in Sources */,
 				7C56D4B9BECEA7B0AE68481F /* Venue.swift in Sources */,
 				6BF91C646DF906686D0CB8E4 /* VenueConfiguration.swift in Sources */,
@@ -280,6 +287,7 @@
 			files = (
 				5CE93CDAC4546E0FAD3DD449 /* BackgroundPositioningTests.swift in Sources */,
 				AA54464E6EF296BD493B86CB /* DiagnosticsTests.swift in Sources */,
+				FED082C6B05A3FDDC665D03A /* GeofenceNotificationTests.swift in Sources */,
 				FBAFD7FD1662DFDE4E966837 /* JourneyTests.swift in Sources */,
 				06C97467677DCF7D85C49EF2 /* WristbandIDTests.swift in Sources */,
 			);

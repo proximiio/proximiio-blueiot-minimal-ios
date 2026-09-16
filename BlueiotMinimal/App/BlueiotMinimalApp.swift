@@ -3,7 +3,7 @@
 //  BlueiotMinimal
 //
 //  THE WHOLE APP, IN ORDER: ask for the wristband, ask for location, start the
-//  SDK, show the map.
+//  SDK, show the map — and ask for notifications on the first place worth one.
 //
 //  Apart from the diagnostics log, nothing else happens at this level. There is no tab bar, no onboarding flow and
 //  no settings — a visitor is handed a band, types the number on it once, answers
@@ -61,6 +61,11 @@ struct RootView: View {
                 LocationPrompt { owesLocationAsk = false }
             } else if let venue {
                 VenueMapScreen(venue: venue, wristband: wristband?.canonical ?? "", onSaveWristband: save)
+                    // The third ask, off the launch path: `Venue` raises it on the first note it would have shown.
+                    .sheet(isPresented: Bindable(venue).owesNotificationAsk) {
+                        NotificationPrompt { venue.owesNotificationAsk = false }
+                            .interactiveDismissDisabled()
+                    }
             } else if let failure {
                 ContentUnavailableView(
                     "Cannot reach the venue",
