@@ -25,6 +25,19 @@ visitor answers one location prompt and one notification prompt, both on the
 first launch. The developer's part is under **In a pocket**
 and **Geofence notifications** below.
 
+## Before you build
+
+Xcode 26.3 or newer builds this app; the deployment target is iOS 17.0.
+
+`project.yml` carries Proximi.io's signing: `bundleIdPrefix: io.proximi` and
+`DEVELOPMENT_TEAM: 2ULWCJMDBJ`. Replace both with your own identifier and team
+before you sign, then run `xcodegen generate` again. Signing with the values in
+this repository fails outside Proximi.io's account.
+
+From Proximi.io you need the three values in the next section and one wristband
+number registered in the venue. The venue's floors, places and geofences come
+from Proximi.io Portal; the app reads them and defines none of its own.
+
 ## Fill in the configuration
 
 Three values, all build-time, none editable at runtime:
