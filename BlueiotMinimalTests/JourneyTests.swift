@@ -34,7 +34,7 @@ final class JourneyPersistenceTests: XCTestCase {
         JourneyStop(
             id: id,
             title: id.capitalized,
-            coordinate: MapCoordinate(latitude: 48.1486, longitude: 17.1077),
+            coordinate: MapCoordinate(latitude: 0, longitude: 0),
             floor: FloorKey(level: 1),
             poiID: id,
             kind: .planned,
@@ -47,18 +47,18 @@ final class JourneyPersistenceTests: XCTestCase {
     func testRoundTripKeepsOrderAndState() throws {
         let journey = Journey(stops: [
             stop("atrium", state: .done),
-            stop("zigzag", state: .skipped),
-            stop("capsules", state: .active),
-            stop("dividing-line"),
+            stop("gallery", state: .skipped),
+            stop("cafe", state: .active),
+            stop("roof-terrace"),
         ])
         JourneyStore.save(journey, to: store)
 
         let restored = try XCTUnwrap(JourneyStore.load(from: store))
         XCTAssertEqual(restored, journey)
-        XCTAssertEqual(restored.stops.map(\.id), ["atrium", "zigzag", "capsules", "dividing-line"])
+        XCTAssertEqual(restored.stops.map(\.id), ["atrium", "gallery", "cafe", "roof-terrace"])
         XCTAssertEqual(restored.stops.map(\.state), [.done, .skipped, .active, .pending])
         XCTAssertEqual(restored.stops[3].floor, FloorKey(level: 1))
-        XCTAssertEqual(restored.stops[3].poiID, "dividing-line")
+        XCTAssertEqual(restored.stops[3].poiID, "roof-terrace")
     }
 
     func testNothingSavedIsNothingRestored() {
@@ -92,8 +92,9 @@ final class JourneyPersistenceTests: XCTestCase {
 /// a fixed category list.
 final class AmenityQueryTests: XCTestCase {
 
-    /// A POI as `Proximiio.features()` returns it. Only the longitude varies; at
-    /// this latitude one degree is about 74 km, so a larger longitude is farther away.
+    /// A POI as `Proximiio.features()` returns it. The coordinates are a fixture
+    /// on the null meridian and the equator, not a venue: only the longitude
+    /// varies, so a larger longitude is farther from `here`.
     private func poi(_ id: String, amenity: String?, longitude: Double) -> ProximiioFeature {
         var properties: [String: JSONValue] = [
             "type": .string("poi"),
@@ -103,12 +104,12 @@ final class AmenityQueryTests: XCTestCase {
         if let amenity { properties["amenity"] = .string(amenity) }
         return ProximiioFeature(
             id: id,
-            geometry: .init(type: "Point", coordinates: .array([.number(longitude), .number(48.1486)])),
+            geometry: .init(type: "Point", coordinates: .array([.number(longitude), .number(0)])),
             properties: .object(properties)
         )
     }
 
-    private let here = ProximiioCoordinate(latitude: 48.1486, longitude: 17.1000)
+    private let here = ProximiioCoordinate(latitude: 0, longitude: 0)
 
     private func places(_ features: [ProximiioFeature]) -> [VenuePOI] {
         VenuePOI.all(in: features)
@@ -117,9 +118,9 @@ final class AmenityQueryTests: XCTestCase {
     /// One result per kind, and it is the nearest, not the first in the array.
     func testNearestOfEachKind() {
         let pois = places([
-            poi("far toilet", amenity: "sanitary:toilet", longitude: 17.1090),
-            poi("near toilet", amenity: "sanitary:toilet", longitude: 17.1010),
-            poi("cafe", amenity: "sustenance:cafe", longitude: 17.1050),
+            poi("far toilet", amenity: "sanitary:toilet", longitude: 0.0090),
+            poi("near toilet", amenity: "sanitary:toilet", longitude: 0.0010),
+            poi("cafe", amenity: "sustenance:cafe", longitude: 0.0050),
         ])
         let nearest = VenuePOI.nearestByAmenity(in: pois, from: here)
 
@@ -132,12 +133,12 @@ final class AmenityQueryTests: XCTestCase {
     /// artworks; a venue tagging nothing offers nothing.
     func testKindsComeFromTheDataNotFromUs() {
         let artworks = places([
-            poi("ZigZag Over Time", amenity: "bcdbffc2:artwork", longitude: 17.1020),
-            poi("Time Capsules", amenity: "bcdbffc2:artwork", longitude: 17.1040),
+            poi("Folded Light", amenity: "a1b2c3d4:artwork", longitude: 0.0020),
+            poi("Paper Garden", amenity: "a1b2c3d4:artwork", longitude: 0.0040),
         ])
-        XCTAssertEqual(Array(VenuePOI.nearestByAmenity(in: artworks, from: here).keys), ["bcdbffc2:artwork"])
+        XCTAssertEqual(Array(VenuePOI.nearestByAmenity(in: artworks, from: here).keys), ["a1b2c3d4:artwork"])
 
-        let untagged = places([poi("a room", amenity: nil, longitude: 17.1020)])
+        let untagged = places([poi("a room", amenity: nil, longitude: 0.0020)])
         XCTAssertTrue(VenuePOI.nearestByAmenity(in: untagged, from: here).isEmpty)
         XCTAssertTrue(VenuePOI.nearestByAmenity(in: [], from: here).isEmpty)
     }
@@ -146,8 +147,8 @@ final class AmenityQueryTests: XCTestCase {
     /// the detour offers.
     func testUntaggedPlacesAreStillPlaces() {
         let pois = places([
-            poi("a room", amenity: nil, longitude: 17.1020),
-            poi("toilet", amenity: "sanitary:toilet", longitude: 17.1040),
+            poi("a room", amenity: nil, longitude: 0.0020),
+            poi("toilet", amenity: "sanitary:toilet", longitude: 0.0040),
         ])
         XCTAssertEqual(pois.count, 2)
         XCTAssertNil(pois.first { $0.title == "a room" }?.amenityID)

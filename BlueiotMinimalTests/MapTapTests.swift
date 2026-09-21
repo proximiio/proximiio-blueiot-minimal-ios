@@ -15,11 +15,12 @@ import Proximiio
 final class MapTapTests: XCTestCase {
 
     /// A point feature as `Proximiio.features()` returns it. A place has type
-    /// `poi`; a level changer has its own type and is not a place.
+    /// `poi`; a level changer has its own type and is not a place. The
+    /// coordinate is a fixture: the resolution reads the ids, not the geometry.
     private func feature(_ id: String, type: String) -> ProximiioFeature {
         ProximiioFeature(
             id: id,
-            geometry: .init(type: "Point", coordinates: .array([.number(17.1077), .number(48.1486)])),
+            geometry: .init(type: "Point", coordinates: .array([.number(0), .number(0)])),
             properties: .object(["type": .string(type), "title": .string(id), "level": .number(0)])
         )
     }
