@@ -19,8 +19,6 @@ log, offline package or step list. Nothing reorders a visit on its own. Each of
 these exists in the SDK and is omitted here; every additional setting is one
 more to read, decide about and maintain.
 
-The full demo app (`proximiio-blueiot-ios`) shows all of them at once. It is a
-field-debugging tool for the Proximi.io team, not a starting point for a product.
 
 Positioning continues with the phone in a pocket or the screen locked. The
 visitor answers one location prompt and one notification prompt, both on the
