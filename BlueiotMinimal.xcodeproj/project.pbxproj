@@ -27,6 +27,7 @@
 		C50AC9B431153ED0F8CE5CFD /* GuidanceLine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39D2104EFFCA3D6A4A7A99D0 /* GuidanceLine.swift */; };
 		CABF34E22C81D3D7FC6E0387 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 807431AABAB1DD9642569D05 /* Assets.xcassets */; };
 		CD5F76DA126ED4496B77F93D /* ProximiioMap in Frameworks */ = {isa = PBXBuildFile; productRef = 5764333272A1FAC95E9ED601 /* ProximiioMap */; };
+		E50D2252328D51DA6ED05431 /* DeviationPromptTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2571BE3A11B571884C58DB69 /* DeviationPromptTests.swift */; };
 		EF10C1372AD27EFE8A78C58B /* BlueiotMinimalApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07522316905DD049DF83CDD5 /* BlueiotMinimalApp.swift */; };
 		FBAFD7FD1662DFDE4E966837 /* JourneyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C811F61C4E954A692AA12DB6 /* JourneyTests.swift */; };
 		FED082C6B05A3FDDC665D03A /* GeofenceNotificationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B333BB24371B5B046CEC74E /* GeofenceNotificationTests.swift */; };
@@ -51,6 +52,7 @@
 		106D0C7B74061BE544CC5599 /* BackgroundPositioningTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundPositioningTests.swift; sourceTree = "<group>"; };
 		169551C14DB7545D88AF0E46 /* App.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = App.xcconfig; sourceTree = "<group>"; };
 		179BD8F5566F16BCEAA72C47 /* BlueiotMinimal.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = BlueiotMinimal.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		2571BE3A11B571884C58DB69 /* DeviationPromptTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviationPromptTests.swift; sourceTree = "<group>"; };
 		281D4E718694C50C25B124A8 /* JourneyStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JourneyStore.swift; sourceTree = "<group>"; };
 		39D2104EFFCA3D6A4A7A99D0 /* GuidanceLine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GuidanceLine.swift; sourceTree = "<group>"; };
 		3B333BB24371B5B046CEC74E /* GeofenceNotificationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeofenceNotificationTests.swift; sourceTree = "<group>"; };
@@ -129,6 +131,7 @@
 			isa = PBXGroup;
 			children = (
 				106D0C7B74061BE544CC5599 /* BackgroundPositioningTests.swift */,
+				2571BE3A11B571884C58DB69 /* DeviationPromptTests.swift */,
 				901549EE1C37770588F836E6 /* DiagnosticsTests.swift */,
 				3B333BB24371B5B046CEC74E /* GeofenceNotificationTests.swift */,
 				C811F61C4E954A692AA12DB6 /* JourneyTests.swift */,
@@ -293,6 +296,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				5CE93CDAC4546E0FAD3DD449 /* BackgroundPositioningTests.swift in Sources */,
+				E50D2252328D51DA6ED05431 /* DeviationPromptTests.swift in Sources */,
 				AA54464E6EF296BD493B86CB /* DiagnosticsTests.swift in Sources */,
 				FED082C6B05A3FDDC665D03A /* GeofenceNotificationTests.swift in Sources */,
 				FBAFD7FD1662DFDE4E966837 /* JourneyTests.swift in Sources */,
@@ -549,7 +553,7 @@
 			repositoryURL = "https://github.com/proximiio/proximiio-map-ios-binary";
 			requirement = {
 				kind = exactVersion;
-				version = "6.0.0-beta.17";
+				version = "6.0.0-beta.18";
 			};
 		};
 		C82611E0490E3DF0A6F7D3C3 /* XCRemoteSwiftPackageReference "proximiio-sdk-ios-binary" */ = {

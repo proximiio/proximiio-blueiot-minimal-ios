@@ -10,7 +10,7 @@ local notification for each geofence entered or left, and walks a planned visit
 of several places in order, with adding, reordering and detours. Positioning
 continues with the phone in a pocket or the screen locked.
 
-1615 lines of Swift in fourteen files. The comments mark where product code goes.
+1709 lines of Swift in fourteen files. The comments mark where product code goes.
 The comments and this README are documentation: each states what the code does
 and what a reader has to do about it, not how it came to be written. Keep that
 register when you extend the app.
@@ -90,7 +90,7 @@ xcodebuild -project BlueiotMinimal.xcodeproj -scheme BlueiotMinimal \
 
 Dependencies are the published binary distributions, pinned to exact versions in
 `project.yml`: the Proximi.io SDK at `6.0.0-beta.43` and the Proximi.io map at
-`6.0.0-beta.17`. MapLibre (`6.29.0`) arrives through the map package and must not
+`6.0.0-beta.18`. MapLibre (`6.29.0`) arrives through the map package and must not
 be declared separately. There are no local package paths.
 
 ## Where things are
@@ -109,7 +109,7 @@ be declared separately. There are no local package paths.
 | `UI/VenueMapScreen.swift` | Map, search button, route, and the start of a visit |
 | `UI/POISearchSheet.swift` | The search list: one place, or several |
 | `UI/GuidanceLine.swift` | The turn-by-turn sentence, in the app's language |
-| `UI/JourneyBar.swift` | The visit: the active stop, the plan, adding, detours, reordering |
+| `UI/JourneyBar.swift` | The visit: the active stop, the plan, adding, detours, reordering, and the prompt shown when the visitor leaves the route |
 | `Assets.xcassets/AppIcon.appiconset` | The app icon, a **placeholder**; see below |
 
 **The icon is a placeholder.** `AppIcon-1024.png` is a flat Proximi.io stand-in
@@ -225,18 +225,30 @@ re-routing of its own.
 **A visit.** The list button next to the search opens the same search sheet in
 multi-select; the places tapped, in that order, become a `Journey`. From there
 `JourneyNavigator` owns every route computation: it draws and follows one leg at
-a time through the map session and re-routes a leg when the visitor leaves it,
-which a single route does not do.
+a time through the map session.
+
+The navigator does not re-route a visitor who leaves the leg:
+`JourneyBar` sets `deviationPolicy = .askApp`, and the drawn leg stays until the
+visitor answers a prompt on the bar. The prompt opens on three
+`JourneyNavigator.events`: `farFromRoute`, `offRouteTooLong` and
+`detourOverstayed`. `leftRoute` opens no prompt. The prompt closes on
+`returnedToRoute`, on `journeyFinished`, on `detourEnded` for a detour prompt,
+and when either button is tapped. `DeviationPrompt.after(_:showing:)` holds this
+rule. The thresholds are the library defaults in `JourneyDeviationRules`; the app
+sets none.
 
 The bar shows the active stop, what is left (`overview.remainingStops.count`,
 `overview.remainingMeters`, its ETA and any leg the router refused), and
 **Continue** once the visitor has arrived. Arrival does not advance the journey;
 the advance rule is `.manual`, and **Continue** calls `advance()`.
 
-**Your visit**, the list button on the bar, is where the plan is changed:
+The plan is changed on the bar and in **Your visit**, the list button on the bar:
 
 | Control | Effect |
 | --- | --- |
+| **Back to my route** | On the deviation prompt. Calls `resumeJourney()`: a live detour ends (reached → visited, otherwise dropped), the leg to the stop the plan is on is drawn from the visitor's position, and the deviation clears |
+| **New route from here** | On the deviation prompt. Calls `replanFromHere()`: a live detour ends, the remaining stops are reordered from the visitor's position and the order is applied. The stop being walked to is not kept in place |
+| **Back to the plan** | On the bar during a detour. Calls `cancelDetour()` |
 | **+** | Opens the same multi-select search used to plan the visit. `JourneyNavigator.add` appends each pick after the remaining stops; the active leg is unchanged. A place the plan already holds is named on the sheet, not dropped. **+** is available when the visit is done too: adding makes the journey active again, and the new stop becomes the active one |
 | **Drag** | Reorders the remaining stops. The rows are `JourneyNavigator.reorderableStops`, the array `move(stopID:toIndex:)` indexes into; the app holds no second copy of which stops may move |
 | **Save N m by reordering** | `proposeOrder()` measures a shorter order and returns a proposal; neither the library nor the sheet applies it, a tap does. It is re-measured whenever the stops change, because `apply` ignores a proposal that no longer describes the journey |
@@ -292,7 +304,7 @@ Crash logs from a TestFlight build symbolicate the app's own code. The
 `MapLibre`, `ProximiioBinary` and `ProximiioMapBinary` frameworks are SwiftPM
 binary targets whose dSYMs are not in the archive by design; App Store Connect
 reports "Upload Symbols Failed" for each, which is expected. Proximi.io support
-has the dSYMs for the pinned versions (SDK 6.0.0-beta.43, map 6.0.0-beta.17) from
+has the dSYMs for the pinned versions (SDK 6.0.0-beta.43, map 6.0.0-beta.18) from
 the GitHub source releases.
 
 ## Tests
@@ -302,7 +314,7 @@ xcodebuild -project BlueiotMinimal.xcodeproj -scheme BlueiotMinimal \
   -destination 'platform=iOS Simulator,name=iPhone 17' test
 ```
 
-Twenty-nine tests in seven classes. Each covers behaviour that fails without
+Thirty-six tests in eight classes. Each covers behaviour that fails without
 anything on screen looking wrong. The views are not tested; a wrong layout is
 visible.
 
@@ -315,3 +327,4 @@ visible.
 | `GeofenceNotificationTests` | 5 | `NotificationPrompt.note(name:entered:)` title, body and log line; the `.notDetermined` ask rule; the launch order; and the foreground presentation options |
 | `BackgroundPositioningTests` | 2 | `LocationPrompt.isOwed(_:)` and `runsInBackground` on `Venue.configuration(token:)` |
 | `DiagnosticsTests` | 1 | No configured secret reaches the log verbatim |
+| `DeviationPromptTests` | 7 | `DeviationPrompt.after(_:showing:)`: the events that open, close and keep the deviation prompt, and its sentences |

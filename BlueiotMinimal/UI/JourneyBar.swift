@@ -6,9 +6,11 @@
 //  the plan.
 //
 //  `JourneyNavigator` owns the walking. It computes each leg from the live
-//  position, draws and follows it through the map session, re-routes when the
-//  visitor leaves the leg and measures what remains. Neither the library nor this
-//  view reorders a journey on its own: a reorder is proposed, and a tap applies it.
+//  position, draws and follows it through the map session and measures what
+//  remains. With `deviationPolicy = .askApp` it does not re-route a visitor who
+//  leaves the leg; this view asks the visitor instead (`DeviationPrompt`).
+//  Neither the library nor this view reorders a journey on its own: a reorder is
+//  proposed, or asked for, and a tap applies it.
 //
 import Proximiio
 import ProximiioMap
@@ -24,6 +26,8 @@ struct JourneyBar: View {
     /// Empty shows no button.
     @State private var detours: [Detour] = []
     @State private var isShowingPlan = false
+    /// The open deviation prompt, or `nil`. Set from `navigator.events`.
+    @State private var prompt: DeviationPrompt?
 
     @MainActor
     init(
@@ -34,13 +38,21 @@ struct JourneyBar: View {
     ) {
         self.places = places
         self.onEnd = onEnd
-        _navigator = StateObject(wrappedValue: JourneyNavigator(session: session, journey: journey))
+        // No automatic re-route when the visitor leaves the leg. The drawn leg
+        // stays until the visitor answers the prompt. The thresholds are the
+        // library defaults (`JourneyDeviationRules`).
+        _navigator = StateObject(wrappedValue: {
+            let navigator = JourneyNavigator(session: session, journey: journey)
+            navigator.deviationPolicy = .askApp
+            return navigator
+        }())
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             header
             GuidanceLine(guidance: navigator.guidance)
+            if let prompt { deviationPrompt(prompt) }
             buttons
         }
         .padding(.horizontal, 16)
@@ -59,6 +71,13 @@ struct JourneyBar: View {
             detours = await offers()
         }
         .task(id: navigator.session.position?.coordinate) { detours = await offers() }
+        // Each access to `events` is a new stream of the events emitted after
+        // it. The stream ends when this task is cancelled with the view.
+        .task {
+            for await event in navigator.events {
+                prompt = DeviationPrompt.after(event, showing: prompt)
+            }
+        }
         .onDisappear { navigator.end() }
         // `Journey` is `Codable` and each stop carries its state. Saving on every
         // change is what restores the visit on the next launch.
@@ -123,6 +142,30 @@ struct JourneyBar: View {
         return parts.joined(separator: " · ")
     }
 
+    /// The visitor's two answers to a deviation. Both end a live detour first
+    /// and clear the deviation. `resumeJourney()` routes to the stop the plan
+    /// is on. `replanFromHere()` reorders the remaining stops from the
+    /// visitor's position, applies the order and routes to its first stop.
+    private func deviationPrompt(_ prompt: DeviationPrompt) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(prompt.message)
+                .font(.subheadline)
+            HStack(spacing: 16) {
+                Button("Back to my route") {
+                    self.prompt = nil
+                    Task { await navigator.resumeJourney() }
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.small)
+                Button("New route from here") {
+                    self.prompt = nil
+                    Task { await navigator.replanFromHere() }
+                }
+                .font(.subheadline)
+            }
+        }
+    }
+
     private var buttons: some View {
         HStack(spacing: 16) {
             if navigator.hasArrived {
@@ -179,6 +222,57 @@ struct JourneyBar: View {
             detours.append(Detour(id: amenityID, title: title, poi: poi))
         }
         return detours.sorted { $0.title.localizedStandardCompare($1.title) == .orderedAscending }
+    }
+}
+
+/// The prompt shown when the visitor has left the visit's route, and the rule
+/// that opens and closes it.
+///
+/// Three `JourneyEvent`s open it: `farFromRoute`, `offRouteTooLong` and
+/// `detourOverstayed`. `leftRoute` does not: a visitor a few metres off the
+/// route is not asked. `returnedToRoute` and `journeyFinished` close it.
+/// `detourEnded` closes a prompt opened by `detourOverstayed`. Other events
+/// leave it as it is. Each event arrives once per episode.
+struct DeviationPrompt: Equatable {
+    enum Reason: Equatable {
+        case farFromRoute
+        case offRouteTooLong
+        case detourOverstayed
+    }
+
+    let reason: Reason
+    let message: String
+
+    /// The prompt after `event`, given the prompt on screen. `nil` shows none.
+    static func after(_ event: JourneyEvent, showing current: DeviationPrompt?) -> DeviationPrompt? {
+        switch event {
+        case .farFromRoute(let distance):
+            DeviationPrompt(
+                reason: .farFromRoute,
+                message: "You are \(Int(distance.rounded())) m from your route."
+            )
+        case .offRouteTooLong(let duration):
+            DeviationPrompt(
+                reason: .offRouteTooLong,
+                message: "You have been off your route for \(minutes(duration)) min."
+            )
+        case .detourOverstayed(let stop, let duration):
+            DeviationPrompt(
+                reason: .detourOverstayed,
+                message: "You left your route for \(stop.title) \(minutes(duration)) min ago."
+            )
+        case .returnedToRoute, .journeyFinished:
+            nil
+        case .detourEnded:
+            current?.reason == .detourOverstayed ? nil : current
+        default:
+            current
+        }
+    }
+
+    /// Whole minutes, at least 1.
+    private static func minutes(_ seconds: TimeInterval) -> Int {
+        max(1, Int((seconds / 60).rounded()))
     }
 }
 
