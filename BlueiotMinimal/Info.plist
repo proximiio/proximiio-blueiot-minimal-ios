@@ -28,6 +28,8 @@
 	<string>1</string>
 	<key>NSBluetoothAlwaysUsageDescription</key>
 	<string>Bluetooth is used by indoor positioning.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>The camera helps resolve the direction of nearby ultra-wideband anchors. This app does not use it.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Keeps your position updating while the app is in your pocket or the screen is locked, so the venue can go on placing you on the map. Your position comes from the venue's anchors, not from this phone.</string>
 	<key>NSMotionUsageDescription</key>

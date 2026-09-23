@@ -24,13 +24,13 @@ packages:
   # app positions from.
   Proximiio:
     url: https://github.com/proximiio/proximiio-sdk-ios-binary
-    exactVersion: "6.0.0-beta.41"
+    exactVersion: "6.0.0-beta.43"
   # The venue map renderer, also a published binary. MapLibre arrives through this
   # package and must not be declared here: it is a SwiftPM binaryTarget, and two of
   # them in one graph fail resolution.
   ProximiioMap:
     url: https://github.com/proximiio/proximiio-map-ios-binary
-    exactVersion: "6.0.0-beta.15"
+    exactVersion: "6.0.0-beta.17"
 
 targets:
   BlueiotMinimal:
@@ -88,14 +88,17 @@ targets:
         # Location is the only permission the app requests (`LocationPrompt`), at
         # the "While Using the App" level. With the mode above that is enough to
         # keep running off screen, so the string describes the background use.
-        # The other three are never requested: the venue positions the visitor
+        # The other four are never requested: the venue positions the visitor
         # and the phone scans nothing. They are present because App Store
         # validation requires a string for every protected API the linked SDK
-        # binary references.
+        # binary references. The SDK links ARKit for camera-assisted UWB
+        # direction. Without the camera string, App Store upload fails with
+        # ITMS-90683.
         NSLocationWhenInUseUsageDescription: Keeps your position updating while the app is in your pocket or the screen is locked, so the venue can go on placing you on the map. Your position comes from the venue's anchors, not from this phone.
         NSBluetoothAlwaysUsageDescription: Bluetooth is used by indoor positioning.
         NSMotionUsageDescription: Motion data smooths the position between updates.
         NSNearbyInteractionUsageDescription: Ultra-wideband ranging improves indoor positioning accuracy.
+        NSCameraUsageDescription: The camera helps resolve the direction of nearby ultra-wideband anchors. This app does not use it.
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: io.proximi.BlueiotMinimal
