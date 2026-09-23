@@ -10,7 +10,7 @@ local notification for each geofence entered or left, and walks a planned visit
 of several places in order, with adding, reordering and detours. Positioning
 continues with the phone in a pocket or the screen locked.
 
-1535 lines of Swift in thirteen files. The comments mark where product code goes.
+1615 lines of Swift in fourteen files. The comments mark where product code goes.
 The comments and this README are documentation: each states what the code does
 and what a reader has to do about it, not how it came to be written. Keep that
 register when you extend the app.

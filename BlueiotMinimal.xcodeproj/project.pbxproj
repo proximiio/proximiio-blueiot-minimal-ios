@@ -12,6 +12,7 @@
 		18BA9322EEA4A59D0FBD0D80 /* WristbandID.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B6BD4E8F912384F45BF8B67 /* WristbandID.swift */; };
 		41C18484D7E19569EB52F5CE /* NotificationPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7B6B01E86D2FE1A3DF75521 /* NotificationPrompt.swift */; };
 		4320D9B210F9307F30386401 /* POISearchSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAE7CA172E674FD6B5A16A7A /* POISearchSheet.swift */; };
+		4B3FC3A5F65B6CEA0D5102A4 /* JourneyPlaybackLaunch.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0930A32203D2D41DE5C0CAA0 /* JourneyPlaybackLaunch.swift */; };
 		4FB7C10F794EE01ADA61BCBA /* JourneyBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 766868470525B50835760888 /* JourneyBar.swift */; };
 		502B0EBFD822B367F5BB3284 /* MapTapTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B3FB3EA365F4154B74E72D9 /* MapTapTests.swift */; };
 		5CE93CDAC4546E0FAD3DD449 /* BackgroundPositioningTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 106D0C7B74061BE544CC5599 /* BackgroundPositioningTests.swift */; };
@@ -45,6 +46,7 @@
 		07522316905DD049DF83CDD5 /* BlueiotMinimalApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlueiotMinimalApp.swift; sourceTree = "<group>"; };
 		087ED37D4542CDC98070E133 /* WristbandPrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WristbandPrompt.swift; sourceTree = "<group>"; };
 		092355E744495DCCE55315AA /* LocationPrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationPrompt.swift; sourceTree = "<group>"; };
+		0930A32203D2D41DE5C0CAA0 /* JourneyPlaybackLaunch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JourneyPlaybackLaunch.swift; sourceTree = "<group>"; };
 		0B3FB3EA365F4154B74E72D9 /* MapTapTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapTapTests.swift; sourceTree = "<group>"; };
 		106D0C7B74061BE544CC5599 /* BackgroundPositioningTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundPositioningTests.swift; sourceTree = "<group>"; };
 		169551C14DB7545D88AF0E46 /* App.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = App.xcconfig; sourceTree = "<group>"; };
@@ -147,6 +149,7 @@
 		CC0D9DF94347EFCD810B7C71 /* Venue */ = {
 			isa = PBXGroup;
 			children = (
+				0930A32203D2D41DE5C0CAA0 /* JourneyPlaybackLaunch.swift */,
 				281D4E718694C50C25B124A8 /* JourneyStore.swift */,
 				F1EF6077D25BBA7565ED23A9 /* Venue.swift */,
 				672CE9E9ED95501810A58F6F /* VenuePOI.swift */,
@@ -271,6 +274,7 @@
 				EF10C1372AD27EFE8A78C58B /* BlueiotMinimalApp.swift in Sources */,
 				C50AC9B431153ED0F8CE5CFD /* GuidanceLine.swift in Sources */,
 				4FB7C10F794EE01ADA61BCBA /* JourneyBar.swift in Sources */,
+				4B3FC3A5F65B6CEA0D5102A4 /* JourneyPlaybackLaunch.swift in Sources */,
 				8B375B2115E744004EE53AC8 /* JourneyStore.swift in Sources */,
 				099507348DA4093E05606482 /* LocationPrompt.swift in Sources */,
 				41C18484D7E19569EB52F5CE /* NotificationPrompt.swift in Sources */,

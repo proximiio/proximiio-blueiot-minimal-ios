@@ -84,6 +84,14 @@ final class Venue {
             await sdk.detachPositionProvider(named: attachedProvider)
             self.attachedProvider = nil
         }
+        #if DEBUG
+        // Debug builds launched with `-journeyPlayback <id>` play a journey instead
+        // of attaching the relay. See JourneyPlaybackLaunch.swift.
+        if let request = JourneyPlaybackLaunch.request(from: ProcessInfo.processInfo.arguments) {
+            attachedProvider = await JourneyPlaybackLaunch.attach(request, to: sdk)
+            return
+        }
+        #endif
         guard let host = VenueConfiguration.relayHost,
               let endpoint = BlueiotCloudRelayEndpoint(text: host)
         else { return }
