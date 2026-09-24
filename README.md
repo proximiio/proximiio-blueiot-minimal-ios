@@ -10,9 +10,10 @@ local notification for each geofence entered or left, and walks a planned visit
 of several places in order, with adding, reordering and detours. Positioning
 continues with the phone in a pocket or the screen locked.
 
-1709 lines of Swift in fourteen files, and one Node script,
-`scripts/journey-run.mjs`, for tests through the sandbox relay. The comments mark
-where product code goes.
+2225 lines of Swift in sixteen files, and one Node script,
+`scripts/journey-run.mjs`, for tests through the sandbox relay. Three of the
+Swift files are compiled into debug builds only (see "Playing a journey on the
+phone"). The comments mark where product code goes.
 The comments and this README are documentation: each states what the code does
 and what a reader has to do about it, not how it came to be written. Keep that
 register when you extend the app.
@@ -105,6 +106,8 @@ be declared separately. There are no local package paths.
 | `Venue/Venue.swift` | SDK start, cloud relay attachment for one wristband, and a notification per geofence event |
 | `Venue/VenuePOI.swift` | The venue's features as searchable places |
 | `Venue/JourneyStore.swift` | Persistence of a visit across launches, and the conversion of a picked place into a stop |
+| `Venue/JourneyPlaybackLaunch.swift` | Debug builds only. The `-journeyPlayback` launch arguments, and the playback provider they and the picker attach |
+| `Venue/JourneyPlayback.swift` | Debug builds only. The journey picker's rows and list states, the playback options, and the playback controls' state |
 | `UI/WristbandPrompt.swift` | The wristband prompt, and the map credits |
 | `UI/LocationPrompt.swift` | The location prompt, and the rule for when it is shown |
 | `UI/NotificationPrompt.swift` | The notification prompt and the rule for when it is shown, the notification text, and the delegate that shows notifications in the foreground |
@@ -112,6 +115,7 @@ be declared separately. There are no local package paths.
 | `UI/POISearchSheet.swift` | The search list: one place, or several |
 | `UI/GuidanceLine.swift` | The turn-by-turn sentence, in the app's language |
 | `UI/JourneyBar.swift` | The visit: the active stop, the plan, adding, detours, reordering, and the prompt shown when the visitor leaves the route |
+| `UI/JourneyPickerSheet.swift` | Debug builds only. The journey picker button, the picker sheet and the playback controls |
 | `Assets.xcassets/AppIcon.appiconset` | The app icon, a **placeholder**; see below |
 
 **The icon is a placeholder.** `AppIcon-1024.png` is a flat Proximi.io stand-in
@@ -358,6 +362,48 @@ stopped, for at most 12 hours, and is not tied to a LiveView session. Stop it
 with `stop` after the test. For the venue, restore the production relay values,
 rebuild, and enter the visitor's wristband id.
 
+## Playing a journey on the phone
+
+Debug builds only. A journey drawn in MapTap is played on the phone in place of
+the cloud relay: `JourneyPlaybackProvider` generates the positions locally, with
+no relay and no LiveView run. The code is inside `#if DEBUG`; Release, TestFlight
+and App Store builds contain neither the picker nor the launch arguments.
+
+**The picker.** The map shows a round button with a walking figure in the
+top-left corner. The corner is the one the map leaves free: the floor picker is
+on the right, and the search bar and `JourneyBar` are at the bottom. The button
+opens a sheet that lists the organisation's journeys from `Proximiio.journeys()`,
+in the API's order, with distance, duration, waypoint count and levels from
+`ProximiioJourneyTimeline`. A journey that fails `validationFailure()` is listed
+disabled, with the reason in red. Tapping a playable journey opens its options:
+speed (1x, 2x or 5x) and loop. **Play** detaches the relay and attaches the
+playback.
+
+**The controls.** While a journey plays, the button is replaced by a panel in the
+same corner: the journey name, the elapsed and total time, pause or resume, and
+stop. The panel reads the provider's `diagnostics` once a second and shows
+**Finished** when a journey that does not loop reaches its last waypoint.
+**Stop** detaches the playback and attaches the relay for the stored wristband,
+as at launch.
+
+**Launch arguments.** The same playback starts at launch with arguments set in
+the Xcode scheme or passed to `devicectl`:
+
+| Argument | Effect |
+| --- | --- |
+| `-journeyPlayback <id>` | Fetches the journey with `fetchJourney(id:)` and plays it instead of attaching the relay. The id is `<organisation uuid>:<uuid>` |
+| `-journeySpeed <x>` | Optional. Journey seconds per real second, 0.5 to 10, default 1 |
+| `-journeyLoop` | Optional. Starts again after the last waypoint |
+
+A journey that cannot be fetched attaches nothing; the controls show the reason,
+and **Stop** attaches the relay. The picker and the launch arguments attach the
+provider through the same `Venue.playJourney` call. Changing the wristband (press
+and hold the map) ends the playback and applies the launch arguments again.
+
+Playback runs with the screen locked (`runsInBackground: true`), as the relay
+does. The diagnostics log records `journey playback: <name>, <speed>x` or
+`journey playback failed: <reason>`.
+
 ## Tests
 
 ```sh
@@ -365,7 +411,7 @@ xcodebuild -project BlueiotMinimal.xcodeproj -scheme BlueiotMinimal \
   -destination 'platform=iOS Simulator,name=iPhone 17' test
 ```
 
-Thirty-six tests in eight classes. Each covers behaviour that fails without
+Forty-nine tests in ten classes. Each covers behaviour that fails without
 anything on screen looking wrong. The views are not tested; a wrong layout is
 visible.
 
@@ -379,3 +425,5 @@ visible.
 | `BackgroundPositioningTests` | 2 | `LocationPrompt.isOwed(_:)` and `runsInBackground` on `Venue.configuration(token:)` |
 | `DiagnosticsTests` | 1 | No configured secret reaches the log verbatim |
 | `DeviationPromptTests` | 7 | `DeviationPrompt.after(_:showing:)`: the events that open, close and keep the deviation prompt, and its sentences |
+| `JourneyPickerTests` | 6 | Debug builds only. Picker rows: playable and unplayable journeys, the `validationFailure()` reason, the summary, API order and journeys without an id; the loading, empty and error states; the number formats |
+| `JourneyPlaybackSessionTests` | 7 | Debug builds only. The playback controls' states: start, pause, resume, finish, a failed fetch and stop; the launch arguments; the options' log line |

@@ -11,6 +11,7 @@
 		099507348DA4093E05606482 /* LocationPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = 092355E744495DCCE55315AA /* LocationPrompt.swift */; };
 		18BA9322EEA4A59D0FBD0D80 /* WristbandID.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B6BD4E8F912384F45BF8B67 /* WristbandID.swift */; };
 		41C18484D7E19569EB52F5CE /* NotificationPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7B6B01E86D2FE1A3DF75521 /* NotificationPrompt.swift */; };
+		42772725E74792B55FDD2356 /* JourneyPickerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE06FF26F4AAFA1DA49F2037 /* JourneyPickerTests.swift */; };
 		4320D9B210F9307F30386401 /* POISearchSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAE7CA172E674FD6B5A16A7A /* POISearchSheet.swift */; };
 		4B3FC3A5F65B6CEA0D5102A4 /* JourneyPlaybackLaunch.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0930A32203D2D41DE5C0CAA0 /* JourneyPlaybackLaunch.swift */; };
 		4FB7C10F794EE01ADA61BCBA /* JourneyBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 766868470525B50835760888 /* JourneyBar.swift */; };
@@ -19,7 +20,9 @@
 		6BF91C646DF906686D0CB8E4 /* VenueConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = E185E1345ABCBCD9C8FD96E7 /* VenueConfiguration.swift */; };
 		78A8796A276BF0B7483C03B2 /* VenuePOI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 672CE9E9ED95501810A58F6F /* VenuePOI.swift */; };
 		7C56D4B9BECEA7B0AE68481F /* Venue.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1EF6077D25BBA7565ED23A9 /* Venue.swift */; };
+		7F7CA5337079BAE2BB556FF2 /* JourneyPlayback.swift in Sources */ = {isa = PBXBuildFile; fileRef = CABF78A41B4A53631B5B8192 /* JourneyPlayback.swift */; };
 		8B375B2115E744004EE53AC8 /* JourneyStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 281D4E718694C50C25B124A8 /* JourneyStore.swift */; };
+		9442BB00A3D211C237ABE1C3 /* JourneyPickerSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED64BC01895914D88C49C6F2 /* JourneyPickerSheet.swift */; };
 		A80E9C531F921464DB86801E /* WristbandPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = 087ED37D4542CDC98070E133 /* WristbandPrompt.swift */; };
 		AA54464E6EF296BD493B86CB /* DiagnosticsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 901549EE1C37770588F836E6 /* DiagnosticsTests.swift */; };
 		BFD50B8F4E0FA87992F6461E /* Proximiio in Frameworks */ = {isa = PBXBuildFile; productRef = 481EF75981CE52268A990007 /* Proximiio */; };
@@ -66,8 +69,11 @@
 		901549EE1C37770588F836E6 /* DiagnosticsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagnosticsTests.swift; sourceTree = "<group>"; };
 		A7B6B01E86D2FE1A3DF75521 /* NotificationPrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationPrompt.swift; sourceTree = "<group>"; };
 		BAE7CA172E674FD6B5A16A7A /* POISearchSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = POISearchSheet.swift; sourceTree = "<group>"; };
+		BE06FF26F4AAFA1DA49F2037 /* JourneyPickerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JourneyPickerTests.swift; sourceTree = "<group>"; };
 		C811F61C4E954A692AA12DB6 /* JourneyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JourneyTests.swift; sourceTree = "<group>"; };
+		CABF78A41B4A53631B5B8192 /* JourneyPlayback.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JourneyPlayback.swift; sourceTree = "<group>"; };
 		E185E1345ABCBCD9C8FD96E7 /* VenueConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VenueConfiguration.swift; sourceTree = "<group>"; };
+		ED64BC01895914D88C49C6F2 /* JourneyPickerSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JourneyPickerSheet.swift; sourceTree = "<group>"; };
 		F1EF6077D25BBA7565ED23A9 /* Venue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Venue.swift; sourceTree = "<group>"; };
 		F37F6C4BF550743EAED19A26 /* VenueMapScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VenueMapScreen.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -109,6 +115,7 @@
 			children = (
 				39D2104EFFCA3D6A4A7A99D0 /* GuidanceLine.swift */,
 				766868470525B50835760888 /* JourneyBar.swift */,
+				ED64BC01895914D88C49C6F2 /* JourneyPickerSheet.swift */,
 				092355E744495DCCE55315AA /* LocationPrompt.swift */,
 				A7B6B01E86D2FE1A3DF75521 /* NotificationPrompt.swift */,
 				BAE7CA172E674FD6B5A16A7A /* POISearchSheet.swift */,
@@ -134,6 +141,7 @@
 				2571BE3A11B571884C58DB69 /* DeviationPromptTests.swift */,
 				901549EE1C37770588F836E6 /* DiagnosticsTests.swift */,
 				3B333BB24371B5B046CEC74E /* GeofenceNotificationTests.swift */,
+				BE06FF26F4AAFA1DA49F2037 /* JourneyPickerTests.swift */,
 				C811F61C4E954A692AA12DB6 /* JourneyTests.swift */,
 				0B3FB3EA365F4154B74E72D9 /* MapTapTests.swift */,
 				83F2B6D65B109417E6EE9F23 /* WristbandIDTests.swift */,
@@ -152,6 +160,7 @@
 		CC0D9DF94347EFCD810B7C71 /* Venue */ = {
 			isa = PBXGroup;
 			children = (
+				CABF78A41B4A53631B5B8192 /* JourneyPlayback.swift */,
 				0930A32203D2D41DE5C0CAA0 /* JourneyPlaybackLaunch.swift */,
 				281D4E718694C50C25B124A8 /* JourneyStore.swift */,
 				F1EF6077D25BBA7565ED23A9 /* Venue.swift */,
@@ -277,6 +286,8 @@
 				EF10C1372AD27EFE8A78C58B /* BlueiotMinimalApp.swift in Sources */,
 				C50AC9B431153ED0F8CE5CFD /* GuidanceLine.swift in Sources */,
 				4FB7C10F794EE01ADA61BCBA /* JourneyBar.swift in Sources */,
+				9442BB00A3D211C237ABE1C3 /* JourneyPickerSheet.swift in Sources */,
+				7F7CA5337079BAE2BB556FF2 /* JourneyPlayback.swift in Sources */,
 				4B3FC3A5F65B6CEA0D5102A4 /* JourneyPlaybackLaunch.swift in Sources */,
 				8B375B2115E744004EE53AC8 /* JourneyStore.swift in Sources */,
 				099507348DA4093E05606482 /* LocationPrompt.swift in Sources */,
@@ -299,6 +310,7 @@
 				E50D2252328D51DA6ED05431 /* DeviationPromptTests.swift in Sources */,
 				AA54464E6EF296BD493B86CB /* DiagnosticsTests.swift in Sources */,
 				FED082C6B05A3FDDC665D03A /* GeofenceNotificationTests.swift in Sources */,
+				42772725E74792B55FDD2356 /* JourneyPickerTests.swift in Sources */,
 				FBAFD7FD1662DFDE4E966837 /* JourneyTests.swift in Sources */,
 				502B0EBFD822B367F5BB3284 /* MapTapTests.swift in Sources */,
 				06C97467677DCF7D85C49EF2 /* WristbandIDTests.swift in Sources */,

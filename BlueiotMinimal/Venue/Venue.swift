@@ -34,6 +34,15 @@ final class Venue {
     /// it. Detaching is by name.
     private var attachedProvider: String?
 
+    /// The followed wristband. `attachRelay()` attaches the relay for it.
+    private(set) var wristband: WristbandID?
+
+    #if DEBUG
+    /// Debug builds only. The journey playback that replaces the relay, and its
+    /// state for the map screen. See JourneyPlayback.swift.
+    let playback = JourneyPlaybackController()
+    #endif
+
     private init(sdk: Proximiio) {
         self.sdk = sdk
         announceGeofences()
@@ -80,19 +89,25 @@ final class Venue {
     /// floor. Do not pass `floorNoMap`: a supplied table switches that
     /// derivation off.
     func follow(_ wristband: WristbandID) async {
-        if let attachedProvider {
-            await sdk.detachPositionProvider(named: attachedProvider)
-            self.attachedProvider = nil
-        }
+        self.wristband = wristband
+        await detachProvider()
         #if DEBUG
+        await playback.end()
         // Debug builds launched with `-journeyPlayback <id>` play a journey instead
         // of attaching the relay. See JourneyPlaybackLaunch.swift.
         if let request = JourneyPlaybackLaunch.request(from: ProcessInfo.processInfo.arguments) {
-            attachedProvider = await JourneyPlaybackLaunch.attach(request, to: sdk)
+            await playJourney(id: request.journeyID, options: request.options)
             return
         }
         #endif
-        guard let host = VenueConfiguration.relayHost,
+        await attachRelay()
+    }
+
+    /// Attaches the cloud relay for `wristband`. Does nothing without a
+    /// wristband or with a relay host that does not parse.
+    private func attachRelay() async {
+        guard let wristband,
+              let host = VenueConfiguration.relayHost,
               let endpoint = BlueiotCloudRelayEndpoint(text: host)
         else { return }
 
@@ -115,6 +130,51 @@ final class Venue {
         Proximiio.recordDiagnosticsEvent(.state, "wristband: \(wristband.canonical)")
         await sdk.attachPositionProvider(provider)
     }
+
+    /// Detaches the attached provider, if any.
+    private func detachProvider() async {
+        guard let attachedProvider else { return }
+        await sdk.detachPositionProvider(named: attachedProvider)
+        self.attachedProvider = nil
+    }
+
+    #if DEBUG
+    /// Debug builds only. Fetches a journey by id and plays it in place of the
+    /// attached provider. The `-journeyPlayback` launch argument uses this call.
+    /// On a failed fetch nothing is attached, and `playback` shows the reason.
+    func playJourney(id: String, options: JourneyPlaybackOptions) async {
+        playback.begin(title: id)
+        do {
+            await playJourney(try await sdk.fetchJourney(id: id), options: options)
+        } catch {
+            await detachProvider()
+            Proximiio.recordDiagnosticsEvent(.state, "journey playback failed: \(error.localizedDescription)")
+            playback.fail(error.localizedDescription)
+        }
+    }
+
+    /// Debug builds only. Plays `journey` in place of the attached provider,
+    /// usually the relay. The journey picker uses this call. `journey` must pass
+    /// `validationFailure()`; the provider plays what it is given.
+    func playJourney(_ journey: ProximiioJourney, options: JourneyPlaybackOptions) async {
+        await detachProvider()
+        await playback.end()
+        playback.begin(title: journey.displayName)
+        let provider = JourneyPlaybackLaunch.provider(for: journey, options: options)
+        attachedProvider = provider.name
+        Proximiio.recordDiagnosticsEvent(.state, "journey playback: \(journey.displayName), \(options.logLine)")
+        await sdk.attachPositionProvider(provider)
+        playback.attached(provider)
+    }
+
+    /// Debug builds only. Detaches the playback and attaches the relay for the
+    /// followed wristband, as `follow(_:)` does without a launch argument.
+    func stopJourney() async {
+        await detachProvider()
+        await playback.end()
+        await attachRelay()
+    }
+    #endif
 
     /// Posts one local notification per geofence enter or exit, in the foreground
     /// and in the background. The geofences are defined in Proximi.io Portal and

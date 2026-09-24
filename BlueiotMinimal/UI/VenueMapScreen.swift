@@ -80,6 +80,15 @@ struct VenueMapScreen: View {
                 bottomBar
             }
         }
+        #if DEBUG
+        // Debug builds only: the journey picker and playback controls
+        // (JourneyPickerSheet.swift). Top-leading is the one corner the map
+        // leaves free: the floor picker is trailing, and the bottom belongs to
+        // the search bar and `JourneyBar`.
+        .overlay(alignment: .topLeading) {
+            JourneyPlaybackOverlay(venue: venue, playback: venue.playback)
+        }
+        #endif
         .task {
             // Enables turn-by-turn. The session then follows the route it draws
             // and publishes `guidance`: the next manoeuvre, the distance to it,
