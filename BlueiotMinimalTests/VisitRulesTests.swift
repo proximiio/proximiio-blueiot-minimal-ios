@@ -81,6 +81,44 @@ final class VisitRulesTests: XCTestCase {
         XCTAssertNil(StartOrder.note(for: nil, applied: false))
     }
 
+    /// The first stop was reached, or a stop-off added, before the first fix.
+    func testTheWaitingNoteClearsWhenTheVisitIsNoLongerOwedOnTheFirstFix() {
+        XCTAssertNil(StartOrder.noteAfterFirstFix(current: StartOrder.waitingNote, result: nil))
+    }
+
+    /// `proposeOrder(from: .visitor)` returned `nil` on the first fix.
+    func testTheWaitingNoteClearsWhenTheFirstFixCannotBeMeasured() {
+        let result = StartOrder.note(for: nil, applied: false)
+        XCTAssertNil(StartOrder.noteAfterFirstFix(current: StartOrder.waitingNote, result: result))
+    }
+
+    /// `apply` refused both shorter orders as stale.
+    func testTheWaitingNoteClearsWhenBothProposalsAreRefused() {
+        var note: String? = StartOrder.waitingNote
+        for _ in 0 ..< 2 {
+            let result = StartOrder.note(for: proposal(saving: 42), applied: false)
+            note = StartOrder.noteAfterFirstFix(current: note, result: result)
+        }
+        XCTAssertNil(note)
+    }
+
+    /// A result replaces the waiting note. With a fix at start there is no
+    /// waiting note and the result is shown as before.
+    func testAResultNoteReplacesTheWaitingNote() {
+        let shortened = StartOrder.note(for: proposal(saving: 42.4), applied: true)
+        XCTAssertEqual(
+            StartOrder.noteAfterFirstFix(current: StartOrder.waitingNote, result: shortened),
+            "Stops put in the shortest order: 42 m less to walk."
+        )
+        let alreadyShortest = StartOrder.note(for: proposal(saving: 0), applied: false)
+        XCTAssertEqual(
+            StartOrder.noteAfterFirstFix(current: StartOrder.waitingNote, result: alreadyShortest),
+            "Your stops are already in the shortest order."
+        )
+        XCTAssertEqual(StartOrder.noteAfterFirstFix(current: nil, result: shortened), shortened)
+        XCTAssertNil(StartOrder.noteAfterFirstFix(current: nil, result: nil))
+    }
+
     // MARK: - OrderAdvice
 
     func testOrderAdviceShowsTheSaving() {

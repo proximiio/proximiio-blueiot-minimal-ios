@@ -41,6 +41,18 @@ enum StartOrder {
         }
         return applied ? "Stops put in the shortest order: \(meters) m less to walk." : nil
     }
+
+    /// The note on the bar once the first fix has been handled: ordered, found
+    /// not owed, not measured, or refused.
+    ///
+    /// - Parameters:
+    ///   - current: the note on the bar.
+    ///   - result: the note from `note(for:applied:)`, or `nil`.
+    /// - Returns: `result` when there is one. Otherwise `current`, except the
+    ///   waiting note, which is cleared: no position is awaited any more.
+    static func noteAfterFirstFix(current: String?, result: String?) -> String? {
+        result ?? (current == waitingNote ? nil : current)
+    }
 }
 
 /// The order row in **Your visit**.

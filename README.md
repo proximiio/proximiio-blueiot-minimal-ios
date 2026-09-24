@@ -243,8 +243,9 @@ result when it is shorter. The first place can move. The bar then says which
 happened for 8 seconds: "Stops put in the shortest order: N m less to walk." or
 "Your stops are already in the shortest order." Without a position the call
 returns `nil`; the tap order is kept, the bar says the order is measured when the
-position arrives, and the first fix runs the same call. `StartOrder` holds the
-rule: no order is applied once a stop is reached, done or skipped, or a stop-off
+position arrives, and the first fix runs the same call. On that fix the result
+replaces the note for 8 seconds; without a result the note is cleared.
+`StartOrder` holds the rule: no order is applied once a stop is reached, done or skipped, or a stop-off
 is in the plan. A restored visit that has already started is not reordered. From
 there `JourneyNavigator` owns every route computation: it draws and follows one
 leg at a time through the map session.
@@ -434,7 +435,7 @@ xcodebuild -project BlueiotMinimal.xcodeproj -scheme BlueiotMinimal \
   -destination 'platform=iOS Simulator,name=iPhone 17' test
 ```
 
-Forty-nine tests in ten classes. Each covers behaviour that fails without
+Sixty-three tests in eleven classes. Each covers behaviour that fails without
 anything on screen looking wrong. The views are not tested; a wrong layout is
 visible.
 
@@ -448,5 +449,6 @@ visible.
 | `BackgroundPositioningTests` | 2 | `LocationPrompt.isOwed(_:)` and `runsInBackground` on `Venue.configuration(token:)` |
 | `DiagnosticsTests` | 1 | No configured secret reaches the log verbatim |
 | `DeviationPromptTests` | 7 | `DeviationPrompt.after(_:showing:)`: the events that open, close and keep the deviation prompt, and its sentences |
+| `VisitRulesTests` | 14 | `StartOrder`: when a new visit is ordered, the note on the bar, and that the waiting note is replaced or cleared once the first fix is handled. `OrderAdvice.of`, the stop-off text and `GuidanceLine.offersReroute(for:)`. Two library behaviours: `proposeOrder(from: .visitor)` returns `nil` without a fix, and `JourneyNavigator.end()` switches single-route guidance off |
 | `JourneyPickerTests` | 6 | Debug builds only. Picker rows: playable and unplayable journeys, the `validationFailure()` reason, the summary, API order and journeys without an id; the loading, empty and error states; the number formats |
 | `JourneyPlaybackSessionTests` | 7 | Debug builds only. The playback controls' states: start, pause, resume, finish, a failed fetch and stop; the launch arguments; the options' log line |

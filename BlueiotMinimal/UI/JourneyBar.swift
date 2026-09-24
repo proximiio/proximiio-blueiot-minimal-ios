@@ -177,10 +177,12 @@ struct JourneyBar: View {
     /// returns `nil`; the tap order is kept and this runs again on the first
     /// fix. `apply` refuses a proposal after the plan or the live stop changed
     /// (the first fix activates a stop), so a refused proposal is measured once
-    /// more.
+    /// more. Every return except the wait for a fix sets the note through
+    /// `StartOrder.noteAfterFirstFix`, so the waiting note does not stay.
     private func orderNewVisit() async {
         guard StartOrder.isOwed(navigator.journey) else {
             ordersOnFirstFix = false
+            orderNote = StartOrder.noteAfterFirstFix(current: orderNote, result: nil)
             return
         }
         guard navigator.session.position != nil else {
@@ -196,8 +198,9 @@ struct JourneyBar: View {
             } else {
                 false
             }
-            orderNote = StartOrder.note(for: proposal, applied: applied)
-            if orderNote != nil || proposal == nil { return }
+            let result = StartOrder.note(for: proposal, applied: applied)
+            orderNote = StartOrder.noteAfterFirstFix(current: orderNote, result: result)
+            if result != nil || proposal == nil { return }
         }
     }
 
