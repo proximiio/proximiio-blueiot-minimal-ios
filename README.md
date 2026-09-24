@@ -10,7 +10,9 @@ local notification for each geofence entered or left, and walks a planned visit
 of several places in order, with adding, reordering and detours. Positioning
 continues with the phone in a pocket or the screen locked.
 
-1709 lines of Swift in fourteen files. The comments mark where product code goes.
+1709 lines of Swift in fourteen files, and one Node script,
+`scripts/journey-run.mjs`, for tests through the sandbox relay. The comments mark
+where product code goes.
 The comments and this README are documentation: each states what the code does
 and what a reader has to do about it, not how it came to be written. Keep that
 register when you extend the app.
@@ -306,6 +308,55 @@ binary targets whose dSYMs are not in the archive by design; App Store Connect
 reports "Upload Symbols Failed" for each, which is expected. Proximi.io support
 has the dSYMs for the pinned versions (SDK 6.0.0-beta.43, map 6.0.0-beta.18) from
 the GitHub source releases.
+
+## Playing a journey through the sandbox relay
+
+`scripts/journey-run.mjs` plays a journey drawn in MapTap into the Proximi.io
+sandbox relay as one wristband's positions. The app receives them through the
+same relay client it uses at the venue, with no code change. The script calls
+the LiveView run API at `https://live.proximi.fi`, the same API as the LiveView
+web page.
+
+Prerequisites:
+
+- Node 22 or later. The script has no dependencies.
+- A LiveView login: a Proximi.io user account (email and password) of the app's
+  organisation.
+- In `Config/Secrets.xcconfig`, `BLUEIOT_CLOUD_RELAY_URL` set to the sandbox
+  relay host and `BLUEIOT_CLOUD_RELAY_TOKEN` set to the sandbox stream token.
+  Both come from your Proximi.io contact. Rebuild after changing them.
+
+```sh
+node scripts/journey-run.mjs login --token-file ~/.liveview-token
+node scripts/journey-run.mjs list --token-file ~/.liveview-token
+node scripts/journey-run.mjs start <journey_id> --token-file ~/.liveview-token \
+  --relay sandbox --ground-floor 1 --loop
+node scripts/journey-run.mjs status --token-file ~/.liveview-token
+node scripts/journey-run.mjs stop <run_id> --token-file ~/.liveview-token
+```
+
+| Command | Effect |
+| --- | --- |
+| `login` | Prompts for the email and the password, the password without echo. Exchanges them for a Proximi.io user token and writes it to `--token-file` with mode 0600. The token is not printed |
+| `list` | The organisation's journeys: id, name, waypoint count |
+| `start` | Starts a run and prints its run id, walker and tag id. `--walker N` selects the organisation's wristband N on the relay; without it the lowest free walker is used. `--speed X` scales walking and dwelling. `--dry-run` prints the request and sends nothing |
+| `status` | The organisation's runs, with state, walker and tag id |
+| `stop` | Stops a run. `pause` and `resume` take a run id the same way |
+
+The API accepts only a user token; an application token is refused with HTTP
+403. `--ground-floor` must equal `BLUEIOT_GROUND_FLOOR_NO` in
+`Config/App.xcconfig`, `1`; that is the default.
+
+**Wristband id.** Enter the walker's wristband id in the app's wristband prompt.
+LiveView's **Connect your app** card shows it for each walker; `start` and
+`status` print it as `tag`. The id of a walker does not change between runs.
+Press and hold the map for 1.5 seconds to change the stored id.
+
+**Shared relay.** The sandbox relay is shared between organisations. Every app
+that follows a walker's id receives its run. A looping run plays until it is
+stopped, for at most 12 hours, and is not tied to a LiveView session. Stop it
+with `stop` after the test. For the venue, restore the production relay values,
+rebuild, and enter the visitor's wristband id.
 
 ## Tests
 
