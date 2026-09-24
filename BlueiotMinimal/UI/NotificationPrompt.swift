@@ -60,7 +60,7 @@ struct NotificationPrompt: View {
 /// is a nonisolated protocol, and the delegate is installed before `Venue`
 /// exists. The center holds its delegate weakly; `shared` is the strong
 /// reference for the process lifetime.
-final class ForegroundNotificationPresenter: NSObject, UNUserNotificationCenterDelegate {
+final class ForegroundNotificationPresenter: NSObject, UNUserNotificationCenterDelegate, Sendable {
     private static let shared = ForegroundNotificationPresenter()
 
     /// Called from `BlueiotMinimalApp.init`, before any notification is posted.
