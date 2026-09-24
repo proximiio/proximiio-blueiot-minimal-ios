@@ -110,7 +110,8 @@ struct VenueMapScreen: View {
         }
         .sheet(isPresented: $isPlanningVisit) {
             // The same search sheet in multi-select. The tap order is the
-            // journey order.
+            // journey order until `JourneyBar` starts the visit; it then applies
+            // the shortest order from the visitor's position.
             POISearchSheet(pois: places, allowsMultiple: true) { picked in
                 guard !picked.isEmpty else { return }
                 session.clearRoute()

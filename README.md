@@ -21,7 +21,7 @@ register when you extend the app.
 ## What the app does not do
 
 No settings screen, no diagnostics UI, no staff mode, no engine switch, no event
-log, no offline package, no step list. Nothing reorders a visit without a tap.
+log, no offline package, no step list. Nothing reorders a started visit without a tap.
 The SDK provides each of these; this app omits them.
 
 ## Requirements
@@ -93,7 +93,7 @@ xcodebuild -project BlueiotMinimal.xcodeproj -scheme BlueiotMinimal \
 
 Dependencies are the published binary distributions, pinned to exact versions in
 `project.yml`: the Proximi.io SDK at `6.0.0-beta.43` and the Proximi.io map at
-`6.0.0-beta.18`. MapLibre (`6.29.0`) arrives through the map package and must not
+`6.0.0-beta.19`. MapLibre (`6.29.0`) arrives through the map package and must not
 be declared separately. There are no local package paths.
 
 ## Where things are
@@ -229,9 +229,12 @@ first fix back on it. The bar shows it; the app adds no detector and no
 re-routing of its own.
 
 **A visit.** The list button next to the search opens the same search sheet in
-multi-select; the places tapped, in that order, become a `Journey`. From there
-`JourneyNavigator` owns every route computation: it draws and follows one leg at
-a time through the map session.
+multi-select; the places tapped, in that order, become a `Journey`. Before the
+visit starts, `JourneyBar` calls `proposeOrder(from: .visitor)` and applies the
+result when it is shorter. The first place can move. Without a position the call
+returns `nil` and the tap order is kept. A restored visit that has already
+started is not reordered. From there `JourneyNavigator` owns every route
+computation: it draws and follows one leg at a time through the map session.
 
 The navigator does not re-route a visitor who leaves the leg:
 `JourneyBar` sets `deviationPolicy = .askApp`, and the drawn leg stays until the
@@ -257,7 +260,7 @@ The plan is changed on the bar and in **Your visit**, the list button on the bar
 | **Back to the plan** | On the bar during a detour. Calls `cancelDetour()` |
 | **+** | Opens the same multi-select search used to plan the visit. `JourneyNavigator.add` appends each pick after the remaining stops; the active leg is unchanged. A place the plan already holds is named on the sheet, not dropped. **+** is available when the visit is done too: adding makes the journey active again, and the new stop becomes the active one |
 | **Drag** | Reorders the remaining stops. The rows are `JourneyNavigator.reorderableStops`, the array `move(stopID:toIndex:)` indexes into; the app holds no second copy of which stops may move |
-| **Save N m by reordering** | `proposeOrder()` measures a shorter order and returns a proposal; neither the library nor the sheet applies it, a tap does. It is re-measured whenever the stops change, because `apply` ignores a proposal that no longer describes the journey |
+| **Save N m by reordering** | `proposeOrder(from: .visitor)` measures a shorter order from the visitor's position and returns a proposal. The stop being walked to can move. Without a position the sheet uses `proposeOrder(from: .activeStop)`, which keeps the stop being walked to first. A tap applies the proposal. It is measured again when the remaining stops, their order or the live stop change, because `apply` refuses a proposal after any of those changes. The button is hidden while `canApply` is `false` |
 | **Show the whole plan on the map** | Sets `journeyOverlayStyle = .venue`, which draws the remaining legs under the active leg. Off by default |
 
 "Stop off" is a detour: `detour(to:)` inserts a stop before the active one and
@@ -310,7 +313,7 @@ Crash logs from a TestFlight build symbolicate the app's own code. The
 `MapLibre`, `ProximiioBinary` and `ProximiioMapBinary` frameworks are SwiftPM
 binary targets whose dSYMs are not in the archive by design; App Store Connect
 reports "Upload Symbols Failed" for each, which is expected. Proximi.io support
-has the dSYMs for the pinned versions (SDK 6.0.0-beta.43, map 6.0.0-beta.18) from
+has the dSYMs for the pinned versions (SDK 6.0.0-beta.43, map 6.0.0-beta.19) from
 the GitHub source releases.
 
 ## Playing a journey through the sandbox relay

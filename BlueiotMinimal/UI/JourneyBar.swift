@@ -9,8 +9,10 @@
 //  position, draws and follows it through the map session and measures what
 //  remains. With `deviationPolicy = .askApp` it does not re-route a visitor who
 //  leaves the leg; this view asks the visitor instead (`DeviationPrompt`).
-//  Neither the library nor this view reorders a journey on its own: a reorder is
-//  proposed, or asked for, and a tap applies it.
+//  The library does not reorder a journey on its own. This view applies one
+//  order without a tap: the shortest order from the visitor's position, once,
+//  before a new visit starts. After that a reorder is proposed, or asked for,
+//  and a tap applies it.
 //
 import Proximiio
 import ProximiioMap
@@ -60,6 +62,16 @@ struct JourneyBar: View {
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
         .padding(16)
         .task {
+            // A new visit is put in the shortest order from the visitor's
+            // position before it starts. `proposeOrder(from: .visitor)` can move
+            // the first pick; before `start()` it measures from the session's
+            // latest fix. It returns `nil` without a fix, and the tap order is
+            // kept. A restored visit that has already started is not reordered.
+            if navigator.journey.stops.allSatisfy({ $0.state == .pending }),
+               let order = await navigator.proposeOrder(from: .visitor),
+               order.isImprovement {
+                await navigator.apply(order)
+            }
             // `start()` draws nothing until the first fix; the leg is computed
             // from the live position.
             await navigator.start()
@@ -292,16 +304,18 @@ struct JourneyPlanSheet: View {
     var body: some View {
         NavigationStack {
             List {
-                if let proposal, proposal.isImprovement {
+                if let proposal, proposal.isImprovement, navigator.canApply(proposal) {
                     Section {
                         Button("Save \(Int(proposal.savedMeters)) m by reordering") {
                             Task {
+                                // `false`: the plan changed after the proposal was
+                                // measured, and nothing was applied.
                                 await navigator.apply(proposal)
                                 self.proposal = nil
                             }
                         }
                     } footer: {
-                        Text("Measured, not applied. Nothing moves until you tap it, and the stop you are walking to stays where it is.")
+                        Text("Measured from where you are. Nothing moves until you tap it.")
                     }
                 }
 
@@ -363,12 +377,17 @@ struct JourneyPlanSheet: View {
                     }
                 }
             }
-            // `proposeOrder()` measures the remaining stops and returns a proposal;
-            // it does not apply it. A proposal describes the order it was measured
-            // against, and `apply` ignores one that no longer matches, so it is
-            // re-measured whenever the remaining stops change.
-            .task(id: navigator.reorderableStops.map(\.id)) {
-                proposal = await navigator.proposeOrder()
+            // `proposeOrder(from: .visitor)` measures the remaining stops from the
+            // visitor's position, the stop being walked to included, and returns a
+            // proposal. It does not apply it. Without a position it returns `nil`;
+            // `.activeStop` then keeps the stop being walked to first and orders
+            // the rest. `apply` refuses a proposal after the remaining stops or
+            // their order change, or after the live stop changes, so the proposal
+            // is measured again on each of those changes.
+            .task(id: [navigator.activeStop?.id ?? ""] + navigator.reorderableStops.map(\.id)) {
+                var measured = await navigator.proposeOrder(from: .visitor)
+                if measured == nil { measured = await navigator.proposeOrder(from: .activeStop) }
+                proposal = measured
             }
             .onChange(of: showsWholePlan) {
                 navigator.session.journeyOverlayStyle = $1 ? .venue : nil
