@@ -19,7 +19,7 @@ struct GuidanceLine: View {
         if let guidance {
             Text(Self.sentence(for: guidance))
                 .font(.subheadline)
-                .lineLimit(1)
+                .lineLimit(2)
                 .accessibilityAddTraits(.updatesFrequently)
         }
     }
@@ -30,14 +30,21 @@ struct GuidanceLine: View {
     /// `distanceToManoeuvreMeters` decreases as the visitor walks;
     /// `RouteManoeuvre.legMeters` is the planned leg length and does not change.
     ///
-    /// Leaving the route is reported, not acted on. `isOffRoute` becomes `true`
-    /// after three fixes more than twelve metres from the route and returns to
-    /// `false` on the first fix back on it. The app adds no detector of its own.
+    /// `isOffRoute` becomes `true` after three fixes more than twelve metres
+    /// from the route and returns to `false` on the first fix back on it. The
+    /// app adds no detector of its own.
     static func sentence(for guidance: RouteGuidance) -> String {
         if guidance.hasArrived { return "You have arrived." }
         if guidance.isOffRoute { return "You have left the route." }
         let metres = Int(guidance.distanceToManoeuvreMeters.rounded())
         return "\(instruction(for: guidance.manoeuvre?.kind)) · \(metres) m"
+    }
+
+    /// Whether the single-route bar offers **New route from here**: off the
+    /// route and not arrived. The session does not re-route; the visitor asks.
+    static func offersReroute(for guidance: RouteGuidance?) -> Bool {
+        guard let guidance else { return false }
+        return guidance.isOffRoute && !guidance.hasArrived
     }
 
     /// `RouteManoeuvre.Kind` and the SDK's `RouteInstruction.Kind` beneath it

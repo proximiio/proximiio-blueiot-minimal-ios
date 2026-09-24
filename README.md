@@ -10,7 +10,7 @@ local notification for each geofence entered or left, and walks a planned visit
 of several places in order, with adding, reordering and detours. Positioning
 continues with the phone in a pocket or the screen locked.
 
-2225 lines of Swift in sixteen files, and one Node script,
+2491 lines of Swift in seventeen files, and one Node script,
 `scripts/journey-run.mjs`, for tests through the sandbox relay. Three of the
 Swift files are compiled into debug builds only (see "Playing a journey on the
 phone"). The comments mark where product code goes.
@@ -111,10 +111,11 @@ be declared separately. There are no local package paths.
 | `UI/WristbandPrompt.swift` | The wristband prompt, and the map credits |
 | `UI/LocationPrompt.swift` | The location prompt, and the rule for when it is shown |
 | `UI/NotificationPrompt.swift` | The notification prompt and the rule for when it is shown, the notification text, and the delegate that shows notifications in the foreground |
-| `UI/VenueMapScreen.swift` | Map, search button, route, and the start of a visit |
+| `UI/VenueMapScreen.swift` | Map, search button, route, **New route from here**, and the start of a visit |
 | `UI/POISearchSheet.swift` | The search list: one place, or several |
 | `UI/GuidanceLine.swift` | The turn-by-turn sentence, in the app's language |
-| `UI/JourneyBar.swift` | The visit: the active stop, the plan, adding, detours, reordering, and the prompt shown when the visitor leaves the route |
+| `Venue/VisitRules.swift` | The rules behind the visit's text: when a new visit is ordered, the order row in the plan, and the stop-off lines |
+| `UI/JourneyBar.swift` | The visit: the active stop, the plan, adding, stop-offs, reordering, and the prompt shown when the visitor leaves the route |
 | `UI/JourneyPickerSheet.swift` | Debug builds only. The journey picker button, the picker sheet and the playback controls |
 | `Assets.xcassets/AppIcon.appiconset` | The app icon, a **placeholder**; see below |
 
@@ -223,18 +224,30 @@ next manoeuvre, the metres left to it, and, once, that the visitor has arrived.
 The instruction sentences belong to the app, in `GuidanceLine.instruction(for:)`,
 because `RouteManoeuvre.Kind` carries no display strings.
 
-Leaving the route is reported, not acted on: `isOffRoute` becomes `true` after
-three fixes more than twelve metres from the route and returns to `false` on the
-first fix back on it. The bar shows it; the app adds no detector and no
-re-routing of its own.
+`isOffRoute` becomes `true` after three fixes more than twelve metres from the
+route and returns to `false` on the first fix back on it. The session does not
+re-route. While it is `true` the bar reads "You have left the route." and shows
+**New route from here**, which computes a new route to the same place from the
+visitor's position (`GuidanceLine.offersReroute(for:)`). The app adds no detector
+of its own. The instruction is one line; the app shows no step list.
+
+Ending a visit hands the guidance back to this bar. `JourneyNavigator.end()` sets
+`guidanceRules` to `nil`; `JourneyBar` calls it once, then `VenueMapScreen`
+sets `.venueWalk` again. A second `end()` after that, from `onDisappear`, would
+switch single-route guidance off, with no instruction and no off-route line.
 
 **A visit.** The list button next to the search opens the same search sheet in
 multi-select; the places tapped, in that order, become a `Journey`. Before the
 visit starts, `JourneyBar` calls `proposeOrder(from: .visitor)` and applies the
-result when it is shorter. The first place can move. Without a position the call
-returns `nil` and the tap order is kept. A restored visit that has already
-started is not reordered. From there `JourneyNavigator` owns every route
-computation: it draws and follows one leg at a time through the map session.
+result when it is shorter. The first place can move. The bar then says which
+happened for 8 seconds: "Stops put in the shortest order: N m less to walk." or
+"Your stops are already in the shortest order." Without a position the call
+returns `nil`; the tap order is kept, the bar says the order is measured when the
+position arrives, and the first fix runs the same call. `StartOrder` holds the
+rule: no order is applied once a stop is reached, done or skipped, or a stop-off
+is in the plan. A restored visit that has already started is not reordered. From
+there `JourneyNavigator` owns every route computation: it draws and follows one
+leg at a time through the map session.
 
 The navigator does not re-route a visitor who leaves the leg:
 `JourneyBar` sets `deviationPolicy = .askApp`, and the drawn leg stays until the
@@ -257,15 +270,22 @@ The plan is changed on the bar and in **Your visit**, the list button on the bar
 | --- | --- |
 | **Back to my route** | On the deviation prompt. Calls `resumeJourney()`: a live detour ends (reached → visited, otherwise dropped), the leg to the stop the plan is on is drawn from the visitor's position, and the deviation clears |
 | **New route from here** | On the deviation prompt. Calls `replanFromHere()`: a live detour ends, the remaining stops are reordered from the visitor's position and the order is applied. The stop being walked to is not kept in place |
-| **Back to the plan** | On the bar during a detour. Calls `cancelDetour()` |
+| **Stop off** | On the bar. See below |
+| **Back to the plan** | On the bar during a stop-off. Calls `cancelDetour()`: the stop-off is dropped and the leg to the planned stop is drawn from the visitor's position |
 | **+** | Opens the same multi-select search used to plan the visit. `JourneyNavigator.add` appends each pick after the remaining stops; the active leg is unchanged. A place the plan already holds is named on the sheet, not dropped. **+** is available when the visit is done too: adding makes the journey active again, and the new stop becomes the active one |
 | **Drag** | Reorders the remaining stops. The rows are `JourneyNavigator.reorderableStops`, the array `move(stopID:toIndex:)` indexes into; the app holds no second copy of which stops may move |
-| **Save N m by reordering** | `proposeOrder(from: .visitor)` measures a shorter order from the visitor's position and returns a proposal. The stop being walked to can move. Without a position the sheet uses `proposeOrder(from: .activeStop)`, which keeps the stop being walked to first. A tap applies the proposal. It is measured again when the remaining stops, their order or the live stop change, because `apply` refuses a proposal after any of those changes. The button is hidden while `canApply` is `false` |
+| **Save N m by reordering** | `proposeOrder(from: .visitor)` measures a shorter order from the visitor's position and returns a proposal. The stop being walked to can move. Without a position the sheet uses `proposeOrder(from: .activeStop)`, which keeps the stop being walked to first. A tap applies the proposal. It is measured again when the remaining stops, their order, the live stop or the first fix change, because `apply` refuses a proposal after any of those changes. The **Order** row is shown whenever two or more stops can move: the button, "Your stops are already in the shortest order.", "Measuring the shortest order…" while measuring or while `canApply` is `false`, or "The order cannot be measured: a stop has no route." when `proposeOrder` returns `nil`. `OrderAdvice.of` holds the rule |
 | **Show the whole plan on the map** | Sets `journeyOverlayStyle = .venue`, which draws the remaining legs under the active leg. Off by default |
 
-"Stop off" is a detour: `detour(to:)` inserts a stop before the active one and
-routes to it immediately, and the plan resumes from the visitor's position
-afterwards. The kinds of place come from the venue's amenity tags
+**Stop off** is a short stop at the nearest place of one kind, such as toilets
+or a café, before the planned stop. The menu lists each kind with the nearest
+place of that kind, under "Go to the nearest one before *planned stop*. Your plan
+continues afterwards." A pick calls `detour(to:)`, which inserts the stop-off
+before the active stop and routes to it immediately. During the stop-off the
+bar reads "Stop off: *place*" and says what follows: on the way, **Back to the
+plan** cancels it; at the place, **Continue** records it and routes to the planned
+stop from the visitor's position. `StopOff` holds the text. The menu is hidden
+while no kind of place is named, and during a stop-off. The kinds of place come from the venue's amenity tags
 (`VenuePOI.nearestByAmenity(in:from:)`), not from a category list in the app. The
 name of each kind comes from the SDK amenity store: `amenities()` when a visit
 starts, which downloads only while nothing is stored, then `amenity(id:)`, a

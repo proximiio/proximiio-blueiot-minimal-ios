@@ -11,8 +11,9 @@
 //  leaves the leg; this view asks the visitor instead (`DeviationPrompt`).
 //  The library does not reorder a journey on its own. This view applies one
 //  order without a tap: the shortest order from the visitor's position, once,
-//  before a new visit starts. After that a reorder is proposed, or asked for,
-//  and a tap applies it.
+//  for a new visit, and says so on the bar. Without a fix it waits for the
+//  first one. After that a reorder is proposed, or asked for, and a tap
+//  applies it.
 //
 import Proximiio
 import ProximiioMap
@@ -30,6 +31,13 @@ struct JourneyBar: View {
     @State private var isShowingPlan = false
     /// The open deviation prompt, or `nil`. Set from `navigator.events`.
     @State private var prompt: DeviationPrompt?
+    /// The line under the header after a new visit is ordered (`StartOrder`).
+    @State private var orderNote: String?
+    /// `true` while a new visit waits for its first fix to be ordered.
+    @State private var ordersOnFirstFix = false
+    /// Set by `endVisit()`, so `onDisappear` does not end the navigator a
+    /// second time.
+    @State private var hasEnded = false
 
     @MainActor
     init(
@@ -53,6 +61,11 @@ struct JourneyBar: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             header
+            if let orderNote {
+                Text(orderNote)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
             GuidanceLine(guidance: navigator.guidance)
             if let prompt { deviationPrompt(prompt) }
             buttons
@@ -62,15 +75,11 @@ struct JourneyBar: View {
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
         .padding(16)
         .task {
-            // A new visit is put in the shortest order from the visitor's
-            // position before it starts. `proposeOrder(from: .visitor)` can move
-            // the first pick; before `start()` it measures from the session's
-            // latest fix. It returns `nil` without a fix, and the tap order is
-            // kept. A restored visit that has already started is not reordered.
-            if navigator.journey.stops.allSatisfy({ $0.state == .pending }),
-               let order = await navigator.proposeOrder(from: .visitor),
-               order.isImprovement {
-                await navigator.apply(order)
+            // A new visit (every stop pending) is put in the shortest order
+            // before it starts. A restored visit that has already started is
+            // not reordered.
+            if navigator.journey.stops.allSatisfy({ $0.state == .pending }) {
+                await orderNewVisit()
             }
             // `start()` draws nothing until the first fix; the leg is computed
             // from the live position.
@@ -83,6 +92,17 @@ struct JourneyBar: View {
             detours = await offers()
         }
         .task(id: navigator.session.position?.coordinate) { detours = await offers() }
+        // The first fix of a new visit that was started without one.
+        .task(id: navigator.session.position == nil) {
+            guard ordersOnFirstFix, navigator.session.position != nil else { return }
+            await orderNewVisit()
+        }
+        // The note stays 8 s. The waiting note stays until the first fix.
+        .task(id: orderNote) {
+            guard orderNote != nil, !ordersOnFirstFix else { return }
+            try? await Task.sleep(for: .seconds(8))
+            if !Task.isCancelled { orderNote = nil }
+        }
         // Each access to `events` is a new stream of the events emitted after
         // it. The stream ends when this task is cancelled with the view.
         .task {
@@ -90,12 +110,15 @@ struct JourneyBar: View {
                 prompt = DeviationPrompt.after(event, showing: prompt)
             }
         }
-        .onDisappear { navigator.end() }
+        // `end()` sets `session.guidanceRules` to `nil`. `endVisit()` calls it
+        // before `onEnd`, which sets the single-route rules again; a second
+        // `end()` here would switch single-route guidance off.
+        .onDisappear { if !hasEnded { navigator.end() } }
         // `Journey` is `Codable` and each stop carries its state. Saving on every
         // change is what restores the visit on the next launch.
         .onChange(of: navigator.journey) { JourneyStore.save($1) }
         .sheet(isPresented: $isShowingPlan) {
-            JourneyPlanSheet(navigator: navigator, places: places, onEnd: onEnd)
+            JourneyPlanSheet(navigator: navigator, places: places, onEnd: endVisit)
         }
     }
 
@@ -108,12 +131,15 @@ struct JourneyBar: View {
         if let stop = navigator.activeStop {
             HStack(spacing: 8) {
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(navigator.detourStop == nil ? stop.title : "\(stop.title) — on the way")
+                    Text(navigator.detourStop == nil ? stop.title : StopOff.title(stop))
                         .lineLimit(1)
-                    Text(remaining)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
+                    Text(navigator.detourStop == nil ? remaining : StopOff.status(
+                        hasArrived: navigator.hasArrived,
+                        next: navigator.reorderableStops.first?.title
+                    ))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
                 }
                 Spacer(minLength: 0)
                 planButton
@@ -126,12 +152,52 @@ struct JourneyBar: View {
                 // library activates the new stop and draws its leg. The plan
                 // button therefore stays visible after the last stop.
                 planButton
-                Button("Finish", action: onEnd)
+                Button("Finish", action: endVisit)
             }
         } else {
             Text("Waiting for your wristband's first position.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
+        }
+    }
+
+    /// Ends the navigator, then hands over to the map screen. `onEnd` restores
+    /// the single-route guidance `end()` switched off.
+    private func endVisit() {
+        hasEnded = true
+        navigator.end()
+        onEnd()
+    }
+
+    /// Puts a new visit in the shortest order from the visitor's position and
+    /// sets `orderNote`.
+    ///
+    /// `proposeOrder(from: .visitor)` measures from the session's latest fix,
+    /// before `start()` too, and can move the first stop. Without a fix it
+    /// returns `nil`; the tap order is kept and this runs again on the first
+    /// fix. `apply` refuses a proposal after the plan or the live stop changed
+    /// (the first fix activates a stop), so a refused proposal is measured once
+    /// more.
+    private func orderNewVisit() async {
+        guard StartOrder.isOwed(navigator.journey) else {
+            ordersOnFirstFix = false
+            return
+        }
+        guard navigator.session.position != nil else {
+            ordersOnFirstFix = true
+            orderNote = StartOrder.waitingNote
+            return
+        }
+        ordersOnFirstFix = false
+        for _ in 0 ..< 2 {
+            let proposal = await navigator.proposeOrder(from: .visitor)
+            let applied = if let proposal, proposal.isImprovement {
+                await navigator.apply(proposal)
+            } else {
+                false
+            }
+            orderNote = StartOrder.note(for: proposal, applied: applied)
+            if orderNote != nil || proposal == nil { return }
         }
     }
 
@@ -198,15 +264,22 @@ struct JourneyBar: View {
         .font(.subheadline)
     }
 
-    /// `detour(to:)` inserts a stop before the active one and routes to it
-    /// immediately. After the detour the plan resumes from the visitor's current
-    /// position.
+    /// A stop-off: the nearest place of one kind, walked to before the planned
+    /// stop. `detour(to:)` inserts it before the active stop and routes to it
+    /// immediately. **Continue** at the stop-off, or **Back to the plan** on
+    /// the way, returns to the plan from the visitor's current position. Each
+    /// item names the kind and the place.
     @ViewBuilder private var detourMenu: some View {
         if !detours.isEmpty {
             Menu("Stop off") {
-                ForEach(detours) { offer in
-                    Button(offer.title) {
-                        Task { await navigator.detour(to: JourneyStop(offer.poi)) }
+                Section(StopOff.menuHeader(goingTo: navigator.activeStop?.title)) {
+                    ForEach(detours) { offer in
+                        Button {
+                            Task { await navigator.detour(to: JourneyStop(offer.poi)) }
+                        } label: {
+                            Text(offer.title)
+                            Text(offer.poi.title)
+                        }
                     }
                 }
             }
@@ -295,6 +368,7 @@ struct JourneyPlanSheet: View {
     let onEnd: () -> Void
 
     @State private var proposal: JourneyOrderProposal?
+    @State private var isMeasuring = true
     @State private var showsWholePlan = false
     @State private var isAdding = false
     /// The places the last add could not insert. Replaced by the next add.
@@ -304,20 +378,7 @@ struct JourneyPlanSheet: View {
     var body: some View {
         NavigationStack {
             List {
-                if let proposal, proposal.isImprovement, navigator.canApply(proposal) {
-                    Section {
-                        Button("Save \(Int(proposal.savedMeters)) m by reordering") {
-                            Task {
-                                // `false`: the plan changed after the proposal was
-                                // measured, and nothing was applied.
-                                await navigator.apply(proposal)
-                                self.proposal = nil
-                            }
-                        }
-                    } footer: {
-                        Text("Measured from where you are. Nothing moves until you tap it.")
-                    }
-                }
+                orderSection
 
                 if let note {
                     Section { Text(note).font(.caption).foregroundStyle(.secondary) }
@@ -384,14 +445,68 @@ struct JourneyPlanSheet: View {
             // the rest. `apply` refuses a proposal after the remaining stops or
             // their order change, or after the live stop changes, so the proposal
             // is measured again on each of those changes.
-            .task(id: [navigator.activeStop?.id ?? ""] + navigator.reorderableStops.map(\.id)) {
+            // The first fix measures again too, from the visitor instead of the
+            // stop being walked to.
+            .task(id: [
+                navigator.activeStop?.id ?? "",
+                navigator.session.position == nil ? "no fix" : "fix",
+            ] + navigator.reorderableStops.map(\.id)) {
+                isMeasuring = true
                 var measured = await navigator.proposeOrder(from: .visitor)
                 if measured == nil { measured = await navigator.proposeOrder(from: .activeStop) }
                 proposal = measured
+                isMeasuring = false
             }
             .onChange(of: showsWholePlan) {
                 navigator.session.journeyOverlayStyle = $1 ? .venue : nil
             }
+        }
+    }
+
+    /// The order row, always shown while two or more stops can move, so the
+    /// visitor sees either the saving or that the order is already the
+    /// shortest. `OrderAdvice.of` holds the rule.
+    @ViewBuilder private var orderSection: some View {
+        let advice = OrderAdvice.of(
+            proposal,
+            movableStops: navigator.reorderableStops.count,
+            isMeasuring: isMeasuring,
+            canApply: proposal.map(navigator.canApply) ?? false
+        )
+        switch advice {
+        case .none:
+            EmptyView()
+        case .save(let meters):
+            Section {
+                Button(advice.text ?? "") {
+                    guard let proposal else { return }
+                    Task {
+                        // `false`: the plan changed after the proposal was
+                        // measured, and nothing was applied.
+                        if await navigator.apply(proposal) {
+                            note = "Stops reordered: \(meters) m less to walk."
+                        }
+                    }
+                }
+            } header: {
+                Text("Order")
+            } footer: {
+                Text("Measured from where you are. Nothing moves until you tap it.")
+            }
+        default:
+            Section("Order") {
+                Label(advice.text ?? "", systemImage: symbol(for: advice))
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private func symbol(for advice: OrderAdvice) -> String {
+        switch advice {
+        case .alreadyShortest: "checkmark"
+        case .unmeasurable: "exclamationmark.triangle"
+        default: "clock"
         }
     }
 

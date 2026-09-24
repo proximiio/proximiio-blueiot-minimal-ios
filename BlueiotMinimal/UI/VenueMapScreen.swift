@@ -135,6 +135,7 @@ struct VenueMapScreen: View {
     private var bottomBar: some View {
         VStack(alignment: .leading, spacing: 10) {
             GuidanceLine(guidance: session.guidance)
+            rerouteButton
             searchRow
         }
         .padding(.horizontal, 16)
@@ -179,6 +180,18 @@ struct VenueMapScreen: View {
 
             visitButton
             recentreButton
+        }
+    }
+
+    /// Shown while the visitor is off the single route. The session reports
+    /// `isOffRoute` and leaves the drawn route as it is; a tap computes a new
+    /// route to the same place from the current position, as a new pick does.
+    @ViewBuilder private var rerouteButton: some View {
+        if let destination, GuidanceLine.offersReroute(for: session.guidance) {
+            Button("New route from here") { Task { await route(to: destination) } }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.small)
+                .font(.subheadline)
         }
     }
 
