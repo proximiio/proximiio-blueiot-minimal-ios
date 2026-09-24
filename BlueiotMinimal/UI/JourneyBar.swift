@@ -538,6 +538,9 @@ struct JourneyPlanSheet: View {
         case .done: "Seen"
         case .skipped: "Skipped"
         case .pending: stop.floor.map { "Level \(MapLevelFormat.trimmed($0))" } ?? "In the venue"
+        // `JourneyStop.State` is a non-frozen enum of the binary map library.
+        // A state added in a later release shows this neutral label.
+        @unknown default: "In your plan"
         }
     }
 

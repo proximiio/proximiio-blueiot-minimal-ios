@@ -7,11 +7,29 @@ options:
   createIntermediateGroups: true
   developmentLanguage: en
 
+# `LastUpgradeCheck` records the Xcode version whose recommended settings the
+# project has taken (2630 = Xcode 26.3). It does not change the file format or
+# the minimum Xcode version: `xcodeVersion` and `objectVersion = 77` still set
+# those. Without it Xcode shows "Update to recommended settings".
+# `LastUpgradeVersion` is the same value for the shared scheme.
+attributes:
+  LastUpgradeCheck: "2630"
+  LastUpgradeVersion: "2630"
+
 settings:
   base:
     SWIFT_VERSION: "5.0"
     DEVELOPMENT_TEAM: 2ULWCJMDBJ
     CODE_SIGN_STYLE: Automatic
+    # The settings Xcode 26.3 recommends for an existing project.
+    # The project has no Run Script build phases, so script sandboxing has
+    # nothing to restrict.
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+    DEAD_CODE_STRIPPING: YES
+    ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS: YES
+    # The app has no string catalog. Both settings apply once one is added.
+    LOCALIZATION_PREFERS_STRING_CATALOGS: YES
+    STRING_CATALOG_GENERATE_SYMBOLS: YES
 
 packages:
   # The Proximi.io iOS SDK as a customer consumes it: the published binary at an
