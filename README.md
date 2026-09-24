@@ -401,8 +401,8 @@ provider through the same `Venue.playJourney` call. Changing the wristband (pres
 and hold the map) ends the playback and applies the launch arguments again.
 
 Playback runs with the screen locked (`runsInBackground: true`), as the relay
-does. The diagnostics log records `journey playback: <name>, <speed>x` or
-`journey playback failed: <reason>`.
+does. The diagnostics log records `journey playback: <name>, <speed>x`, with
+`, looping` appended when the journey loops, or `journey playback failed: <reason>`.
 
 ## Tests
 
