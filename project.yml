@@ -48,7 +48,7 @@ packages:
   # them in one graph fail resolution.
   ProximiioMap:
     url: https://github.com/proximiio/proximiio-map-ios-binary
-    exactVersion: "6.0.0-beta.20"
+    exactVersion: "6.0.0-beta.21"
 
 targets:
   BlueiotMinimal:
