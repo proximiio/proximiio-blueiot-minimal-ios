@@ -42,13 +42,13 @@ packages:
   # app positions from.
   Proximiio:
     url: https://github.com/proximiio/proximiio-sdk-ios-binary
-    exactVersion: "6.0.0-beta.43"
+    exactVersion: "6.0.0-beta.44"
   # The venue map renderer, also a published binary. MapLibre arrives through this
   # package and must not be declared here: it is a SwiftPM binaryTarget, and two of
   # them in one graph fail resolution.
   ProximiioMap:
     url: https://github.com/proximiio/proximiio-map-ios-binary
-    exactVersion: "6.0.0-beta.19"
+    exactVersion: "6.0.0-beta.20"
 
 targets:
   BlueiotMinimal:
