@@ -91,6 +91,9 @@ targets:
         ProximiioApplicationToken: $(PROXIMIIO_APPLICATION_TOKEN)
         BlueiotCloudRelayURL: $(BLUEIOT_CLOUD_RELAY_URL)
         BlueiotCloudRelayToken: $(BLUEIOT_CLOUD_RELAY_TOKEN)
+        # Optional second relay; empty keys attach none.
+        BlueiotSandboxRelayURL: $(BLUEIOT_SANDBOX_RELAY_URL)
+        BlueiotSandboxRelayToken: $(BLUEIOT_SANDBOX_RELAY_TOKEN)
         # A venue value, not a credential. Config/App.xcconfig carries this
         # venue's value in the tracked file.
         BlueiotGroundFloorNo: $(BLUEIOT_GROUND_FLOOR_NO)

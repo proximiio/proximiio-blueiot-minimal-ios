@@ -2,10 +2,10 @@
 //  VenueConfiguration.swift
 //  BlueiotMinimal
 //
-//  Build-time configuration: three credentials and one venue value. They are set
-//  in Config/App.xcconfig and the untracked Config/Secrets.xcconfig, written into
-//  Info.plist and read here once. None of them is editable at runtime; the app
-//  has no settings screen.
+//  Build-time configuration: three required credentials, an optional second
+//  relay and one venue value. They are set in Config/App.xcconfig and the
+//  untracked Config/Secrets.xcconfig, written into Info.plist and read here once.
+//  None of them is editable at runtime; the app has no settings screen.
 //
 import Foundation
 
@@ -22,8 +22,16 @@ enum VenueConfiguration {
     /// `BLUEIOT_CLOUD_RELAY_TOKEN`. Without it the relay answers HTTP 401.
     static let relayToken = value("BlueiotCloudRelayToken")
 
-    /// The two credentials, passed to the diagnostics recorder for redaction.
-    static var secrets: [String] { [token, relayToken].compactMap { $0 } }
+    /// The optional second relay address — `BLUEIOT_SANDBOX_RELAY_URL`. Usually
+    /// the Proximi.io sandbox relay. `nil` attaches no second relay. Not checked
+    /// by ``missing``.
+    static let sandboxRelayHost = value("BlueiotSandboxRelayURL")
+
+    /// The second relay's stream token — `BLUEIOT_SANDBOX_RELAY_TOKEN`.
+    static let sandboxRelayToken = value("BlueiotSandboxRelayToken")
+
+    /// The tokens, passed to the diagnostics recorder for redaction.
+    static var secrets: [String] { [token, relayToken, sandboxRelayToken].compactMap { $0 } }
 
     /// The floor number the venue's BlueIoT engine reports for the ground floor —
     /// `BLUEIOT_GROUND_FLOOR_NO`. Not a credential. Empty means 0 (no shift); a
@@ -31,7 +39,8 @@ enum VenueConfiguration {
     static let groundFloorNumber = value("BlueiotGroundFloorNo").flatMap(Int.init) ?? 0
 
     /// The empty required keys in one sentence, or `nil` when all three are set.
-    /// `BLUEIOT_GROUND_FLOOR_NO` has a default and is not checked.
+    /// `BLUEIOT_GROUND_FLOOR_NO` has a default and is not checked. The sandbox
+    /// relay keys are optional and are not checked.
     static var missing: String? {
         let keys = [
             ("PROXIMIIO_APPLICATION_TOKEN", token),

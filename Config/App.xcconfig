@@ -1,6 +1,6 @@
 // Base build configuration. Tracked; no credential belongs in this file.
 //
-// The three credential keys are empty here and take their values from the
+// The credential keys are empty here and take their values from the
 // untracked Config/Secrets.xcconfig, which the `#include?` at the end pulls in
 // last (the last assignment wins). Empty values leave the Info.plist keys empty;
 // the app then shows a setup hint instead of crashing.
@@ -12,6 +12,8 @@
 PROXIMIIO_APPLICATION_TOKEN =
 BLUEIOT_CLOUD_RELAY_URL =
 BLUEIOT_CLOUD_RELAY_TOKEN =
+BLUEIOT_SANDBOX_RELAY_URL =
+BLUEIOT_SANDBOX_RELAY_TOKEN =
 
 // The value below is a venue setting, not a credential, so it is tracked here.
 
