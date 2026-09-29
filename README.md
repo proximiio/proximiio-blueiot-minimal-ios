@@ -42,8 +42,7 @@ from Proximi.io Portal; the app reads them and defines none of its own.
 
 ## Configuration
 
-Three required values and two optional ones, all build-time, none editable at
-runtime:
+Three values, all build-time, none editable at runtime:
 
 ```sh
 cp Config/Secrets.example.xcconfig Config/Secrets.xcconfig
@@ -53,18 +52,26 @@ $EDITOR Config/Secrets.xcconfig
 | Key | Value |
 | --- | --- |
 | `PROXIMIIO_APPLICATION_TOKEN` | The Proximi.io application token (Proximi.io Portal → organisation → Application token) |
-| `BLUEIOT_CLOUD_RELAY_URL` | The Proximi.io cloud relay carrying this venue's wristband positions. A bare host is enough; the SDK derives `https://…` and `wss://…/stream` from it |
+| `BLUEIOT_CLOUD_RELAY_URL` | The Proximi.io cloud relay the app receives wristband positions from. A bare host is enough; the SDK derives `https://…` and `wss://…/stream` from it |
 | `BLUEIOT_CLOUD_RELAY_TOKEN` | That relay's stream token, sent as `Authorization: Bearer` |
-| `BLUEIOT_SANDBOX_RELAY_URL` | Optional. A second relay, attached next to the first under the provider name `blueiot-cloud-sandbox`. Usually the Proximi.io sandbox relay; see **Playing a journey through the sandbox relay**. Empty = no second relay |
-| `BLUEIOT_SANDBOX_RELAY_TOKEN` | Optional. The second relay's stream token |
+
+The app attaches one relay. `BLUEIOT_CLOUD_RELAY_URL` and its token select it:
+
+| Relay | `BLUEIOT_CLOUD_RELAY_URL` | Use |
+| --- | --- | --- |
+| Production | `blueiot.proximi.fi` | The venue's wristband positions |
+| Sandbox | `relay-sandbox.proximi.fi` | Development and testing; see **Playing a journey through the sandbox relay** |
+
+Each relay has its own stream token. Set `BLUEIOT_CLOUD_RELAY_TOKEN` to the
+token of the chosen relay. Rebuild after changing either key.
 
 `Config/Secrets.xcconfig` is gitignored and is the only place for a real
-credential. `Config/App.xcconfig` is tracked, leaves those keys empty and
+credential. `Config/App.xcconfig` is tracked, leaves those three keys empty and
 `#include?`s your copy last, so your values win. It carries one non-secret venue
 value; see **Floor numbers** below.
 
 An empty key neither fails the build nor crashes the app.
-`VenueConfiguration.missing` names every empty required key in one sentence, which
+`VenueConfiguration.missing` names every empty key in one sentence, which
 `WristbandPrompt` shows under the number field. Past that point the effects
 differ:
 
@@ -353,12 +360,11 @@ Prerequisites:
 - Node 22 or later. The script has no dependencies.
 - A LiveView login: a Proximi.io user account (email and password) of the app's
   organisation.
-- In `Config/Secrets.xcconfig`, `BLUEIOT_SANDBOX_RELAY_URL` set to the sandbox
-  relay host and `BLUEIOT_SANDBOX_RELAY_TOKEN` set to the sandbox stream token.
-  Both come from your Proximi.io contact. Rebuild after changing them.
-  `BLUEIOT_CLOUD_RELAY_URL` stays on the venue relay; the app attaches both
-  relays. While both report the same wristband id, the most recent fix sets the
-  position.
+- In `Config/Secrets.xcconfig`, `BLUEIOT_CLOUD_RELAY_URL` set to the sandbox
+  relay host `relay-sandbox.proximi.fi` and `BLUEIOT_CLOUD_RELAY_TOKEN` set to
+  the sandbox stream token. The token comes from your Proximi.io contact.
+  Rebuild after changing them. Set both back to the production relay for the
+  venue.
 
 ```sh
 node scripts/journey-run.mjs login --token-file ~/.liveview-token

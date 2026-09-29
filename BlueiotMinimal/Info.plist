@@ -8,10 +8,6 @@
 	<string>$(BLUEIOT_CLOUD_RELAY_URL)</string>
 	<key>BlueiotGroundFloorNo</key>
 	<string>$(BLUEIOT_GROUND_FLOOR_NO)</string>
-	<key>BlueiotSandboxRelayToken</key>
-	<string>$(BLUEIOT_SANDBOX_RELAY_TOKEN)</string>
-	<key>BlueiotSandboxRelayURL</key>
-	<string>$(BLUEIOT_SANDBOX_RELAY_URL)</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>

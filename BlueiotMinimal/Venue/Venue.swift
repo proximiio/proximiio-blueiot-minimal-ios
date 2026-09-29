@@ -30,9 +30,9 @@ final class Venue {
     /// venue, the floors and the live position from it.
     let sdk: Proximiio
 
-    /// The names of the attached providers, kept so a later `follow(_:)` can
-    /// detach them. Detaching is by name.
-    private var attachedProviders: [String] = []
+    /// The name of the attached provider, kept so a later `follow(_:)` can detach
+    /// it. Detaching is by name.
+    private var attachedProvider: String?
 
     /// The followed wristband. `attachRelay()` attaches the relay for it.
     private(set) var wristband: WristbandID?
@@ -103,49 +103,18 @@ final class Venue {
         await attachRelay()
     }
 
-    /// Attaches the cloud relay for `wristband`, and the sandbox relay when
-    /// `BLUEIOT_SANDBOX_RELAY_URL` is set. Does nothing without a wristband; skips
-    /// a relay whose host is empty or does not parse.
-    ///
-    /// Both providers feed the same position. The SDK publishes each fix as it
-    /// arrives, so while both relays report the wristband the most recent fix
-    /// sets the dot.
+    /// Attaches the cloud relay for `wristband`. Does nothing without a
+    /// wristband or with a relay host that does not parse.
     private func attachRelay() async {
-        guard let wristband else { return }
-        Proximiio.recordDiagnosticsEvent(.state, "wristband: \(wristband.canonical)")
-        if let configuration = Self.relayConfiguration(
-            host: VenueConfiguration.relayHost,
-            token: VenueConfiguration.relayToken,
-            wristband: wristband
-        ) {
-            await attach(BlueiotCloudRelayPositionProvider(configuration: configuration))
-        }
-        // A distinct `sourceName`: `attachPositionProvider` replaces a provider
-        // attached under the same name.
-        if let configuration = Self.relayConfiguration(
-            host: VenueConfiguration.sandboxRelayHost,
-            token: VenueConfiguration.sandboxRelayToken,
-            wristband: wristband,
-            sourceName: "blueiot-cloud-sandbox"
-        ) {
-            await attach(BlueiotCloudRelayPositionProvider(configuration: configuration))
-        }
-    }
+        guard let wristband,
+              let host = VenueConfiguration.relayHost,
+              let endpoint = BlueiotCloudRelayEndpoint(text: host)
+        else { return }
 
-    /// The relay configuration for one relay, or `nil` when `host` is empty or
-    /// does not parse. `sourceName` is also the provider name.
-    private static func relayConfiguration(
-        host: String?,
-        token: String?,
-        wristband: WristbandID,
-        sourceName: String = "blueiot-cloud"
-    ) -> BlueiotCloudRelayConfiguration? {
-        guard let host, let endpoint = BlueiotCloudRelayEndpoint(text: host) else { return nil }
         var configuration = BlueiotCloudRelayConfiguration(
             endpoint: endpoint,
-            token: token,
+            token: VenueConfiguration.relayToken,
             tagID: wristband.canonical,
-            sourceName: sourceName,
             // Without this the SDK pauses the provider on backgrounding, regardless
             // of the process's own background permission.
             runsInBackground: true
@@ -155,22 +124,18 @@ final class Venue {
         // = 1` states that convention; the SDK applies the shift above ground only
         // (engine 1 is level 0, engine 2 is level 1, engine -1 stays level -1).
         configuration.engineGroundFloorNumber = VenueConfiguration.groundFloorNumber
-        return configuration
-    }
 
-    /// Attaches `provider` and records its name for `detachProvider()`.
-    private func attach(_ provider: any CustomPositionProviding) async {
-        attachedProviders.append(provider.name)
+        let provider = BlueiotCloudRelayPositionProvider(configuration: configuration)
+        attachedProvider = provider.name
+        Proximiio.recordDiagnosticsEvent(.state, "wristband: \(wristband.canonical)")
         await sdk.attachPositionProvider(provider)
     }
 
-    /// Detaches every attached provider.
+    /// Detaches the attached provider, if any.
     private func detachProvider() async {
-        let names = attachedProviders
-        attachedProviders = []
-        for name in names {
-            await sdk.detachPositionProvider(named: name)
-        }
+        guard let attachedProvider else { return }
+        await sdk.detachPositionProvider(named: attachedProvider)
+        self.attachedProvider = nil
     }
 
     #if DEBUG
@@ -196,8 +161,9 @@ final class Venue {
         await playback.end()
         playback.begin(title: journey.displayName)
         let provider = JourneyPlaybackLaunch.provider(for: journey, options: options)
+        attachedProvider = provider.name
         Proximiio.recordDiagnosticsEvent(.state, "journey playback: \(journey.displayName), \(options.logLine)")
-        await attach(provider)
+        await sdk.attachPositionProvider(provider)
         playback.attached(provider)
     }
 
