@@ -26,8 +26,9 @@ enum VenueConfiguration {
     static var secrets: [String] { [token, relayToken].compactMap { $0 } }
 
     /// The floor number the venue's BlueIoT engine reports for the ground floor —
-    /// `BLUEIOT_GROUND_FLOOR_NO`. Not a credential. Empty means 0 (no shift); a
-    /// LocalSense engine requires 1. See ``Venue/follow(_:)``.
+    /// `BLUEIOT_GROUND_FLOOR_NO`. Not a credential. May be negative: this
+    /// venue's engine reports the ground floor as -1. Empty means 0 (no shift).
+    /// See ``Venue/follow(_:)``.
     static let groundFloorNumber = value("BlueiotGroundFloorNo").flatMap(Int.init) ?? 0
 
     /// The empty required keys in one sentence, or `nil` when all three are set.

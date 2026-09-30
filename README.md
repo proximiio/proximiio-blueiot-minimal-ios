@@ -177,9 +177,11 @@ One integer, in `Config/App.xcconfig`, states the engine's numbering convention:
 
 | Key | Value |
 | --- | --- |
-| `BLUEIOT_GROUND_FLOOR_NO` | The floor number the engine reports for the ground floor, passed to `BlueiotCloudRelayConfiguration.engineGroundFloorNumber`. A LocalSense engine numbers floors from 1 with no 0 and basements negative; Proximi.io numbers the ground floor 0, so the value is `1`. The SDK applies the shift above ground only: engine 1 is level 0, engine 2 is level 1, engine −1 stays level −1. Empty = `0`, no shift |
+| `BLUEIOT_GROUND_FLOOR_NO` | The floor number the engine reports for the ground floor, passed to `BlueiotCloudRelayConfiguration.engineGroundFloorNumber`. Proximi.io numbers the ground floor 0. The museum's engine numbers floors −1, 1, 2, 3, 4 with no 0, and engine −1 is the ground floor, so the value is `-1`. At `-1` the SDK shifts the ground floor and the floors below it: engine −1 is level 0, engine −2 is level −1, engine 1 stays level 1. Engine 0 matches no floor. For an engine that numbers the ground floor 1, the value is `1`. Empty = `0`, no shift |
 
 It is a venue setting, not a credential, so it is tracked with this venue's value.
+A negative value requires an SDK release after 6.0.0-beta.45. Up to beta.45
+the SDK applies the shift only to floors at and above ground.
 
 **Background positioning.** Positioning continues when the screen locks. It
 requires four settings, and each one missing has the same symptom: positioning
@@ -370,7 +372,7 @@ Prerequisites:
 node scripts/journey-run.mjs login --token-file ~/.liveview-token
 node scripts/journey-run.mjs list --token-file ~/.liveview-token
 node scripts/journey-run.mjs start <journey_id> --token-file ~/.liveview-token \
-  --relay sandbox --ground-floor 1 --loop
+  --relay sandbox --ground-floor -1 --loop
 node scripts/journey-run.mjs status --token-file ~/.liveview-token
 node scripts/journey-run.mjs stop <run_id> --token-file ~/.liveview-token
 ```
@@ -385,7 +387,7 @@ node scripts/journey-run.mjs stop <run_id> --token-file ~/.liveview-token
 
 The API accepts only a user token; an application token is refused with HTTP
 403. `--ground-floor` must equal `BLUEIOT_GROUND_FLOOR_NO` in
-`Config/App.xcconfig`, `1`; that is the default.
+`Config/App.xcconfig`, `-1`; that is the default.
 
 **Wristband id.** Enter the walker's wristband id in the app's wristband prompt.
 LiveView's **Connect your app** card shows it for each walker; `start` and

@@ -31,9 +31,9 @@
  * browser session cookie.
  *
  * `--ground-floor` is the floor number the receiving app uses for the ground
- * floor. Default 1: a BlueIoT LocalSense engine numbers the ground floor 1, and
- * the iOS BlueIoT apps set `BLUEIOT_GROUND_FLOOR_NO = 1`. Set it to the app's
- * value.
+ * floor. Default -1: the museum's LocalSense engine numbers the ground floor -1,
+ * and this app sets `BLUEIOT_GROUND_FLOOR_NO = -1`. Set it to the app's value.
+ * A negative value is passed as `--ground-floor -1`.
  *
  * `--walker N` selects which of the organisation's wristbands on the relay the
  * run plays as, 1..N. The server leases the wristband ids and lists them in
@@ -349,8 +349,8 @@ async function main() {
       const body = {
         journey_id: arg,
         sink: preview ? 'preview' : 'relay',
-        // The receiving app's ground floor number. Default 1 (LocalSense).
-        ground_floor_no: number(options, 'ground-floor', { integer: true }) ?? 1,
+        // The receiving app's ground floor number. Default -1 (the museum).
+        ground_floor_no: number(options, 'ground-floor', { integer: true }) ?? -1,
         loop: Boolean(options.get('loop')),
       }
       if (options.has('relay')) {

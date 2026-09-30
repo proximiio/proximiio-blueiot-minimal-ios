@@ -84,8 +84,8 @@ final class Venue {
     /// detached first, so a change is a re-attach, not an SDK restart.
     ///
     /// Floor resolution is done by the SDK. It resolves engine floor numbers
-    /// against the floor levels it synced, shifting numbers at and above ground
-    /// by `engineGroundFloorNumber`, and logs a fix whose number matches no
+    /// against the floor levels it synced, applying `engineGroundFloorNumber`,
+    /// and logs a fix whose number matches no
     /// floor. Do not pass `floorNoMap`: a supplied table switches that
     /// derivation off.
     func follow(_ wristband: WristbandID) async {
@@ -119,10 +119,12 @@ final class Venue {
             // of the process's own background permission.
             runsInBackground: true
         )
-        // A LocalSense engine numbers floors from 1 with no 0 and basements
-        // negative; Proximi.io numbers the ground floor 0. `engineGroundFloorNumber
-        // = 1` states that convention; the SDK applies the shift above ground only
-        // (engine 1 is level 0, engine 2 is level 1, engine -1 stays level -1).
+        // `engineGroundFloorNumber` is the engine's number for the ground floor.
+        // Proximi.io numbers the ground floor 0. This venue's engine numbers
+        // floors -1, 1, 2, 3, 4 with no 0, and engine -1 is the ground floor.
+        // At -1 the SDK shifts the ground floor and the floors below it:
+        // engine -1 is level 0, engine -2 is level -1, engine 1 stays level 1.
+        // Engine 0 matches no floor and is logged.
         configuration.engineGroundFloorNumber = VenueConfiguration.groundFloorNumber
 
         let provider = BlueiotCloudRelayPositionProvider(configuration: configuration)
