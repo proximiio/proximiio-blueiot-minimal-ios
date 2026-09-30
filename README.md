@@ -102,8 +102,8 @@ xcodebuild -project BlueiotMinimal.xcodeproj -scheme BlueiotMinimal \
 ```
 
 Dependencies are the published binary distributions, pinned to exact versions in
-`project.yml`: the Proximi.io SDK at `6.0.0-beta.45` and the Proximi.io map at
-`6.0.0-beta.22`. MapLibre (`6.29.0`) arrives through the map package and must not
+`project.yml`: the Proximi.io SDK at `6.0.0-beta.46` and the Proximi.io map at
+`6.0.0-beta.23`. MapLibre (`6.29.0`) arrives through the map package and must not
 be declared separately. There are no local package paths.
 
 ## Where things are
@@ -180,7 +180,7 @@ One integer, in `Config/App.xcconfig`, states the engine's numbering convention:
 | `BLUEIOT_GROUND_FLOOR_NO` | The floor number the engine reports for the ground floor, passed to `BlueiotCloudRelayConfiguration.engineGroundFloorNumber`. Proximi.io numbers the ground floor 0. The museum's engine numbers floors −1, 1, 2, 3, 4 with no 0, and engine −1 is the ground floor, so the value is `-1`. At `-1` the SDK shifts the ground floor and the floors below it: engine −1 is level 0, engine −2 is level −1, engine 1 stays level 1. Engine 0 matches no floor. For an engine that numbers the ground floor 1, the value is `1`. Empty = `0`, no shift |
 
 It is a venue setting, not a credential, so it is tracked with this venue's value.
-A negative value requires an SDK release after 6.0.0-beta.45. Up to beta.45
+A negative value requires SDK 6.0.0-beta.46 or later. Up to beta.45
 the SDK applies the shift only to floors at and above ground.
 
 **Background positioning.** Positioning continues when the screen locks. It
@@ -346,7 +346,7 @@ Crash logs from a TestFlight build symbolicate the app's own code. The
 `MapLibre`, `ProximiioBinary` and `ProximiioMapBinary` frameworks are SwiftPM
 binary targets whose dSYMs are not in the archive by design; App Store Connect
 reports "Upload Symbols Failed" for each, which is expected. Proximi.io support
-has the dSYMs for the pinned versions (SDK 6.0.0-beta.45, map 6.0.0-beta.22) from
+has the dSYMs for the pinned versions (SDK 6.0.0-beta.46, map 6.0.0-beta.23) from
 the GitHub source releases.
 
 ## Playing a journey through the sandbox relay
