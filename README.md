@@ -229,6 +229,10 @@ search pick does, through `route(to:)` in `VenueMapScreen`, after
 `ProximiioMapSession.onFeatureTap` reports. The first id that matches a place
 wins. A tap on no place, or during a visit, changes nothing.
 
+**Route line.** `.with(routeLineStyle:)` on the `MapOptions` in `VenueMapScreen`
+draws the route ahead as a gradient from `#3F69FF` at the visitor to `#ED3731`
+at the destination, and the walked part in `#3F69FF` at 30 % opacity.
+
 **Turn-by-turn.** `session.guidanceRules = .venueWalk` in `VenueMapScreen`
 enables it; guidance is off by default. The map library then follows the route it
 draws and republishes `session.guidance` on every fix; the bottom bar shows the

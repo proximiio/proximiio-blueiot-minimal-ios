@@ -56,6 +56,17 @@ struct VenueMapScreen: View {
             // credits the ⓘ presented must then be shown by the app; the long-press
             // sheet lists them.
             .with(chrome: .bare)
+            // Draws the route line: a gradient from the visitor to the
+            // destination, and the walked part in faded blue. The values are
+            // from the app design.
+            .with(routeLineStyle: RouteLineStyle(
+                remaining: .gradient(from: MapColor(hex: 0x3F69FF), to: MapColor(hex: 0xED3731)),
+                remainingOpacity: 1,
+                completedColor: MapColor(hex: 0x3F69FF),
+                completedOpacity: 0.3,
+                widthPoints: 6,
+                cap: .round
+            ))
         ))
     }
 
