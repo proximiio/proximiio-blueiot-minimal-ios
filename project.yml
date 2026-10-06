@@ -61,6 +61,9 @@ targets:
     sources:
       # Sources and resources under the folder, including
       # BlueiotMinimal/Assets.xcassets, which xcodegen files as a resource.
+      # BlueiotMinimal/Settings.bundle is also copied as a resource. It adds
+      # the "Smooth position" switch to the app's page in the Settings app
+      # (App/PositionSmoothingSetting.swift).
       - path: BlueiotMinimal
     dependencies:
       - package: Proximiio

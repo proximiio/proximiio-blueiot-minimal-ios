@@ -36,6 +36,9 @@ struct BlueiotMinimalApp: App {
         // Installed before `Venue` exists, so the first geofence notification
         // posted in the foreground is shown.
         ForegroundNotificationPresenter.install()
+        // The default of the "Smooth position" switch in the Settings app. It
+        // is registered before `VenueMapScreen` reads it.
+        PositionSmoothingSetting.register()
     }
 
     var body: some Scene {

@@ -25,6 +25,11 @@ No settings screen, no diagnostics UI, no staff mode, no engine switch, no event
 log, no offline package, no step list. Nothing reorders a started visit without a tap.
 The SDK provides each of these; this app omits them.
 
+The one switch is **Smooth position** in the system Settings app, under the
+app's name (`Settings.bundle`): off draws the dot exactly on each relay fix
+(`PositionStyle.smoothing = .none`) for comparison with the venue's RTLS, and
+applies when the app returns to the foreground.
+
 ## Requirements
 
 `project.yml` declares `xcodeVersion: "16.0"` and the committed project is in the
@@ -109,6 +114,7 @@ separately.
 | --- | --- |
 | `App/BlueiotMinimalApp.swift` | The launch order: wristband → location → notifications → map. The SDK starts after the location step |
 | `App/VenueConfiguration.swift` | The build-time values and the `BlueiotBindingConfiguration` built from them |
+| `App/PositionSmoothingSetting.swift` | The **Smooth position** switch from `Settings.bundle`, and the map smoothing it selects |
 | `Venue/WristbandSession.swift` | The wristband session: `restore()`, the binding state, the location dialogs before a bind, `bind(tagID:)` and `end()` |
 | `Venue/Venue.swift` | SDK start, attachment of the binding's position provider, and a notification per geofence event |
 | `Venue/VenuePOI.swift` | The venue's features as searchable places |

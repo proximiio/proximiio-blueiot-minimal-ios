@@ -39,35 +39,37 @@ struct VenueMapScreen: View {
     @State private var journey: Journey? = JourneyStore.load()
     @State private var isPlanningVisit = false
     @State private var isChangingWristband = false
+    @Environment(\.scenePhase) private var scenePhase
 
     @MainActor
     init(venue: Venue, wristband: WristbandSession) {
         self.venue = venue
         self.wristband = wristband
-        _session = StateObject(wrappedValue: ProximiioMapSession(
-            sdk: venue.sdk,
-            options: MapOptions(
-                // The library's floor picker. The app has no other.
-                floorSelector: .trailing,
-                // Draws a route when one is set and clears it when none is.
-                route: .automatic
-            )
-            // Removes the attribution ⓘ, the MapLibre logo and the compass. The
-            // credits the ⓘ presented must then be shown by the app; the long-press
-            // sheet lists them.
-            .with(chrome: .bare)
-            // Draws the route line: a gradient from the visitor to the
-            // destination, and the walked part in faded blue. The values are
-            // from the app design.
-            .with(routeLineStyle: RouteLineStyle(
-                remaining: .gradient(from: MapColor(hex: 0x3F69FF), to: MapColor(hex: 0xED3731)),
-                remainingOpacity: 1,
-                completedColor: MapColor(hex: 0x3F69FF),
-                completedOpacity: 0.3,
-                widthPoints: 6,
-                cap: .round
-            ))
+        var options = MapOptions(
+            // The library's floor picker. The app has no other.
+            floorSelector: .trailing,
+            // Draws a route when one is set and clears it when none is.
+            route: .automatic
+        )
+        // Removes the attribution ⓘ, the MapLibre logo and the compass. The
+        // credits the ⓘ presented must then be shown by the app; the long-press
+        // sheet lists them.
+        .with(chrome: .bare)
+        // Draws the route line: a gradient from the visitor to the
+        // destination, and the walked part in faded blue. The values are
+        // from the app design.
+        .with(routeLineStyle: RouteLineStyle(
+            remaining: .gradient(from: MapColor(hex: 0x3F69FF), to: MapColor(hex: 0xED3731)),
+            remainingOpacity: 1,
+            completedColor: MapColor(hex: 0x3F69FF),
+            completedOpacity: 0.3,
+            widthPoints: 6,
+            cap: .round
         ))
+        // The "Smooth position" switch in the Settings app
+        // (PositionSmoothingSetting.swift). Off draws the dot exactly on each fix.
+        options.position.smoothing = PositionSmoothingSetting.smoothing()
+        _session = StateObject(wrappedValue: ProximiioMapSession(sdk: venue.sdk, options: options))
     }
 
     var body: some View {
@@ -116,6 +118,14 @@ struct VenueMapScreen: View {
             session.onFeatureTap = { identifiers, _ in pickTapped(identifiers) }
             // A local cache read, not a download: `Venue.start` fetched the features.
             places = VenuePOI.all(in: await venue.sdk.features())
+        }
+        .task { recordSmoothing() }
+        // The "Smooth position" switch is changed in the Settings app, so the
+        // app is in the background at that time. The new value is applied when
+        // the app becomes active again; a relaunch is not needed.
+        .onChange(of: scenePhase) { _, phase in
+            guard phase == .active else { return }
+            applySmoothingSetting()
         }
         .sheet(isPresented: $isSearching) {
             POISearchSheet(pois: places) { picked in
@@ -253,6 +263,23 @@ struct VenueMapScreen: View {
         .disabled(session.position == nil)
         .accessibilityLabel("Centre on me")
         .accessibilityAddTraits(session.cameraMode == .free ? [] : .isSelected)
+    }
+
+    /// Applies the stored "Smooth position" value to the map session when it
+    /// differs from the session's. Assigning `session.options` takes effect
+    /// from the next frame and does not reload the style.
+    private func applySmoothingSetting() {
+        let smoothing = PositionSmoothingSetting.smoothing()
+        guard session.options.position.smoothing != smoothing else { return }
+        session.options.position.smoothing = smoothing
+        recordSmoothing()
+    }
+
+    /// Writes the map smoothing in use to the diagnostics log, so a log from a
+    /// test with the switch off shows that the dot was drawn without smoothing.
+    private func recordSmoothing() {
+        let isOn = session.options.position.smoothing != .none
+        Proximiio.recordDiagnosticsEvent(.state, "position smoothing: \(isOn ? "on" : "off")")
     }
 
     /// Picks a tapped place through `route(to:)`, the call a search pick makes:
