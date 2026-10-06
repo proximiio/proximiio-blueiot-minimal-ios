@@ -152,6 +152,36 @@
 			<key>DefaultValue</key>
 			<false/>
 		</dict>
+		<dict>
+			<key>Type</key>
+			<string>PSGroupSpecifier</string>
+			<key>Title</key>
+			<string>Language</string>
+			<key>FooterText</key>
+			<string>Sets the language of the place titles and floor names on the map and in search. A title without an Arabic or English translation shows its default title. Automatic uses the app language, English. Applies when you return to the app.</string>
+		</dict>
+		<dict>
+			<key>Type</key>
+			<string>PSMultiValueSpecifier</string>
+			<key>Title</key>
+			<string>Map language</string>
+			<key>Key</key>
+			<string>mapLanguage</string>
+			<key>DefaultValue</key>
+			<string></string>
+			<key>Titles</key>
+			<array>
+				<string>Automatic</string>
+				<string>English</string>
+				<string>Arabic</string>
+			</array>
+			<key>Values</key>
+			<array>
+				<string></string>
+				<string>en</string>
+				<string>ar</string>
+			</array>
+		</dict>
 	</array>
 </dict>
 </plist>

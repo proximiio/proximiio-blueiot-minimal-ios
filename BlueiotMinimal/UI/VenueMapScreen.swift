@@ -72,6 +72,9 @@ struct VenueMapScreen: View {
         PositionSmoothingSetting.resetTuningIfRequested()
         options.position.smoothing = PositionSmoothingSetting.smoothing()
         options.position.smoothingTuning = PositionSmoothingSetting.tuning()
+        // The "Map language" choice in the Settings app
+        // (MapLanguageSetting.swift). `nil` is Automatic.
+        options.language = MapLanguageSetting.language()
         _session = StateObject(wrappedValue: ProximiioMapSession(sdk: venue.sdk, options: options))
     }
 
@@ -119,17 +122,20 @@ struct VenueMapScreen: View {
             // label, on the main thread. A tap does not release the follow camera;
             // only a pan, pinch or rotate does.
             session.onFeatureTap = { identifiers, _ in pickTapped(identifiers) }
-            // A local cache read, not a download: `Venue.start` fetched the features.
-            places = VenuePOI.all(in: await venue.sdk.features())
+            await loadPlaces()
         }
-        .task { recordSmoothing() }
-        // The "Smooth position" switch and the "Smoothing" values are changed
-        // in the Settings app, so the app is in the background at that time.
-        // The new values are applied when
-        // the app becomes active again; a relaunch is not needed.
+        .task {
+            recordSmoothing()
+            recordLanguage()
+        }
+        // The "Smooth position" switch, the "Smoothing" values and the "Map
+        // language" choice are changed in the Settings app, so the app is in
+        // the background at that time. The new values are applied when the
+        // app becomes active again; a relaunch is not needed.
         .onChange(of: scenePhase) { _, phase in
             guard phase == .active else { return }
             applySmoothingSetting()
+            applyLanguageSetting()
         }
         .sheet(isPresented: $isSearching) {
             POISearchSheet(pois: places) { picked in
@@ -289,6 +295,35 @@ struct VenueMapScreen: View {
     /// drawn with.
     private func recordSmoothing() {
         Proximiio.recordDiagnosticsEvent(.state, PositionSmoothingSetting.summary(of: session.options.position))
+    }
+
+    /// Reads the places with their titles in the map's language, so the search
+    /// and the map labels agree. A local cache read, not a download:
+    /// `Venue.start` fetched the features. The picked destination takes its
+    /// title in the new language.
+    private func loadPlaces() async {
+        let language = session.options.resolvedLanguage
+        places = VenuePOI.all(in: await venue.sdk.features(), language: language)
+        if let picked = destination {
+            destination = places.first { $0.id == picked.id } ?? picked
+        }
+    }
+
+    /// Applies the stored "Map language" choice to the map session when it
+    /// differs from the session's, and reloads the place titles. Assigning
+    /// `session.options` redraws the labels and floor names without a style
+    /// reload.
+    private func applyLanguageSetting() {
+        let language = MapLanguageSetting.language()
+        guard session.options.language != language else { return }
+        session.options.language = language
+        recordLanguage()
+        Task { await loadPlaces() }
+    }
+
+    /// Writes the language the map draws in to the diagnostics log.
+    private func recordLanguage() {
+        Proximiio.recordDiagnosticsEvent(.state, MapLanguageSetting.summary(of: session.options))
     }
 
     /// Picks a tapped place through `route(to:)`, the call a search pick makes:

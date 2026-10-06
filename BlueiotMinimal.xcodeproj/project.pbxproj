@@ -11,6 +11,7 @@
 		41C18484D7E19569EB52F5CE /* NotificationPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7B6B01E86D2FE1A3DF75521 /* NotificationPrompt.swift */; };
 		42772725E74792B55FDD2356 /* JourneyPickerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE06FF26F4AAFA1DA49F2037 /* JourneyPickerTests.swift */; };
 		4320D9B210F9307F30386401 /* POISearchSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAE7CA172E674FD6B5A16A7A /* POISearchSheet.swift */; };
+		49B9E5515490036B5EA65B8E /* MapLanguageSetting.swift in Sources */ = {isa = PBXBuildFile; fileRef = D85A5754E144C1282F3A0B01 /* MapLanguageSetting.swift */; };
 		4B3FC3A5F65B6CEA0D5102A4 /* JourneyPlaybackLaunch.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0930A32203D2D41DE5C0CAA0 /* JourneyPlaybackLaunch.swift */; };
 		4E814868E17E0F6EA66AB1F7 /* WristbandCopyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C630C84A34B7DFFBA9CBDB7 /* WristbandCopyTests.swift */; };
 		4FB7C10F794EE01ADA61BCBA /* JourneyBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 766868470525B50835760888 /* JourneyBar.swift */; };
@@ -39,6 +40,7 @@
 		E1973A67867AA012FEE45B37 /* Settings.bundle in Resources */ = {isa = PBXBuildFile; fileRef = 9F64FA23AF9EC94716A69525 /* Settings.bundle */; };
 		E50D2252328D51DA6ED05431 /* DeviationPromptTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2571BE3A11B571884C58DB69 /* DeviationPromptTests.swift */; };
 		EF10C1372AD27EFE8A78C58B /* BlueiotMinimalApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07522316905DD049DF83CDD5 /* BlueiotMinimalApp.swift */; };
+		FA677A4A4A5F5331CC7BFA33 /* MapLanguageSettingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95114C79EBE848AEC62C2B5B /* MapLanguageSettingTests.swift */; };
 		FBAFD7FD1662DFDE4E966837 /* JourneyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C811F61C4E954A692AA12DB6 /* JourneyTests.swift */; };
 		FED082C6B05A3FDDC665D03A /* GeofenceNotificationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B333BB24371B5B046CEC74E /* GeofenceNotificationTests.swift */; };
 /* End PBXBuildFile section */
@@ -76,6 +78,7 @@
 		7C630C84A34B7DFFBA9CBDB7 /* WristbandCopyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WristbandCopyTests.swift; sourceTree = "<group>"; };
 		807431AABAB1DD9642569D05 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		901549EE1C37770588F836E6 /* DiagnosticsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagnosticsTests.swift; sourceTree = "<group>"; };
+		95114C79EBE848AEC62C2B5B /* MapLanguageSettingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapLanguageSettingTests.swift; sourceTree = "<group>"; };
 		9B4D7CDA7952AD1B49009CD8 /* PositionSmoothingSetting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PositionSmoothingSetting.swift; sourceTree = "<group>"; };
 		9F64FA23AF9EC94716A69525 /* Settings.bundle */ = {isa = PBXFileReference; lastKnownFileType = wrapper.cfbundle; path = Settings.bundle; sourceTree = "<group>"; };
 		A7B6B01E86D2FE1A3DF75521 /* NotificationPrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationPrompt.swift; sourceTree = "<group>"; };
@@ -83,6 +86,7 @@
 		BE06FF26F4AAFA1DA49F2037 /* JourneyPickerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JourneyPickerTests.swift; sourceTree = "<group>"; };
 		C811F61C4E954A692AA12DB6 /* JourneyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JourneyTests.swift; sourceTree = "<group>"; };
 		CABF78A41B4A53631B5B8192 /* JourneyPlayback.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JourneyPlayback.swift; sourceTree = "<group>"; };
+		D85A5754E144C1282F3A0B01 /* MapLanguageSetting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapLanguageSetting.swift; sourceTree = "<group>"; };
 		E015A6621E85A46797155A1B /* WristbandCopy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WristbandCopy.swift; sourceTree = "<group>"; };
 		E185E1345ABCBCD9C8FD96E7 /* VenueConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VenueConfiguration.swift; sourceTree = "<group>"; };
 		ED64BC01895914D88C49C6F2 /* JourneyPickerSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JourneyPickerSheet.swift; sourceTree = "<group>"; };
@@ -119,6 +123,7 @@
 			isa = PBXGroup;
 			children = (
 				07522316905DD049DF83CDD5 /* BlueiotMinimalApp.swift */,
+				D85A5754E144C1282F3A0B01 /* MapLanguageSetting.swift */,
 				9B4D7CDA7952AD1B49009CD8 /* PositionSmoothingSetting.swift */,
 				E185E1345ABCBCD9C8FD96E7 /* VenueConfiguration.swift */,
 			);
@@ -160,6 +165,7 @@
 				3B333BB24371B5B046CEC74E /* GeofenceNotificationTests.swift */,
 				BE06FF26F4AAFA1DA49F2037 /* JourneyPickerTests.swift */,
 				C811F61C4E954A692AA12DB6 /* JourneyTests.swift */,
+				95114C79EBE848AEC62C2B5B /* MapLanguageSettingTests.swift */,
 				0B3FB3EA365F4154B74E72D9 /* MapTapTests.swift */,
 				EF5AFFF9646E9BEA00FEC3B4 /* PositionSmoothingSettingTests.swift */,
 				1B88D467B74CAFCEC3FDCA89 /* VisitRulesTests.swift */,
@@ -314,6 +320,7 @@
 				4B3FC3A5F65B6CEA0D5102A4 /* JourneyPlaybackLaunch.swift in Sources */,
 				8B375B2115E744004EE53AC8 /* JourneyStore.swift in Sources */,
 				099507348DA4093E05606482 /* LocationPrompt.swift in Sources */,
+				49B9E5515490036B5EA65B8E /* MapLanguageSetting.swift in Sources */,
 				41C18484D7E19569EB52F5CE /* NotificationPrompt.swift in Sources */,
 				4320D9B210F9307F30386401 /* POISearchSheet.swift in Sources */,
 				BF5B7A30892479DF07B2E588 /* PositionSmoothingSetting.swift in Sources */,
@@ -339,6 +346,7 @@
 				FED082C6B05A3FDDC665D03A /* GeofenceNotificationTests.swift in Sources */,
 				42772725E74792B55FDD2356 /* JourneyPickerTests.swift in Sources */,
 				FBAFD7FD1662DFDE4E966837 /* JourneyTests.swift in Sources */,
+				FA677A4A4A5F5331CC7BFA33 /* MapLanguageSettingTests.swift in Sources */,
 				502B0EBFD822B367F5BB3284 /* MapTapTests.swift in Sources */,
 				7ABF5D114AEB659F3366CB05 /* PositionSmoothingSettingTests.swift in Sources */,
 				C1A773C2F22253AD3C4E0ADE /* VisitRulesTests.swift in Sources */,

@@ -25,9 +25,17 @@ struct VenuePOI: Identifiable, Equatable {
     let amenityID: String?
 
     /// Every place in the venue, sorted by title.
-    static func all(in features: [ProximiioFeature]) -> [VenuePOI] {
+    ///
+    /// `language` selects the translated title, as `MapOptions.language` does
+    /// for the map labels. Pass the map's `resolvedLanguage` so the app and
+    /// the map show the same titles. The default is
+    /// `ProximiioLanguage.preferred`, the map's Automatic.
+    static func all(
+        in features: [ProximiioFeature],
+        language: String = ProximiioLanguage.preferred
+    ) -> [VenuePOI] {
         features
-            .compactMap(VenuePOI.init(feature:))
+            .compactMap { VenuePOI(feature: $0, language: language) }
             .sorted { $0.title.localizedStandardCompare($1.title) == .orderedAscending }
     }
 
@@ -57,7 +65,7 @@ struct VenuePOI: Identifiable, Equatable {
 
     /// Returns `nil` for every feature that is not a point POI. Rooms, walls,
     /// level changers and the path network arrive in the same array.
-    private init?(feature: ProximiioFeature) {
+    private init?(feature: ProximiioFeature, language: String) {
         guard feature.propertyType == "poi",
               let geometry = feature.geometry,
               geometry.type == "Point",
@@ -70,9 +78,10 @@ struct VenuePOI: Identifiable, Equatable {
         else { return nil }
 
         id = feature.id
-        // Organisations label places with `title` or `name`. The id is the fallback,
-        // so a mislabelled POI stays routable.
-        title = Self.text(feature.properties?["title"])
+        // `title(language:)` reads the `title_i18n` entry for `language`, then
+        // `title`. Organisations without a title use `name`. The id is the
+        // fallback, so a mislabelled POI stays routable.
+        title = feature.title(language: language).flatMap { $0.isEmpty ? nil : $0 }
             ?? Self.text(feature.properties?["name"])
             ?? feature.id
         coordinate = ProximiioCoordinate(latitude: latitude, longitude: longitude)

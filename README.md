@@ -39,6 +39,8 @@ comma is accepted as the decimal separator; the map clamps out-of-range values.
 app empties every field and turns the switch off when it returns to the
 foreground. The diagnostics log records the values in use.
 
+The **Map language** choice sets `MapOptions.language` (Automatic, English or Arabic) for the place titles and floor names on the map and in search; a missing translation shows the default title, and it applies when the app returns to the foreground.
+
 ## Requirements
 
 `project.yml` declares `xcodeVersion: "16.0"` and the committed project is in the
