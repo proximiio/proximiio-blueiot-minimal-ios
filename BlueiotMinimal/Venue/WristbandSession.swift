@@ -81,6 +81,7 @@ final class WristbandSession: ObservableObject {
         case .permissionNeeded: return location.canAskForPermission ? .permission : nil
         case .preciseLocationNeeded: return .preciseLocation
         case .ready, .notRequired: return nil
+        @unknown default: return nil
         }
     }
 
@@ -116,6 +117,7 @@ final class WristbandSession: ObservableObject {
         case .active: isFollowing = true
         case .unbound, .ended: isFollowing = false
         case .binding: break
+        @unknown default: isFollowing = false
         }
         Proximiio.recordDiagnosticsEvent(.state, "wristband: \(WristbandCopy.logLine(for: state))")
     }

@@ -52,6 +52,8 @@ enum WristbandCopy {
             return "BLUEIOT_RELAY_URL is not a relay-api address."
         case .invalidRequest, .forbidden, .unexpected:
             return error.localizedDescription
+        @unknown default:
+            return error.localizedDescription
         }
     }
 
@@ -68,6 +70,8 @@ enum WristbandCopy {
         case .simulatedLocation:
             return "This phone reports a simulated location. Turn it off, or ask at the reception desk."
         case .rejectedByRelay:
+            return "To take over this wristband, be inside the museum with location enabled, or ask at the reception desk."
+        @unknown default:
             return "To take over this wristband, be inside the museum with location enabled, or ask at the reception desk."
         }
     }
@@ -95,6 +99,8 @@ enum WristbandCopy {
             return "The connection to your wristband was lost. Connect it again."
         case .unknown:
             return "Your visit has ended."
+        @unknown default:
+            return "Your visit has ended."
         }
     }
 
@@ -120,8 +126,11 @@ enum WristbandCopy {
             case (.reconnecting, _): return "Reconnecting…"
             case (.online, .lost): return "Signal lost"
             case (.online, .ok): return "Online"
+            default: return "Connecting…"
             }
         case .unbound, .ended, nil:
+            return nil
+        @unknown default:
             return nil
         }
     }
@@ -135,6 +144,7 @@ enum WristbandCopy {
             if case .lost = signal { return "active, \(link.rawValue), signal lost" }
             return "active, \(link.rawValue)"
         case .ended(let reason): return "ended, \(reason.rawValue)"
+        @unknown default: return "unknown"
         }
     }
 }
