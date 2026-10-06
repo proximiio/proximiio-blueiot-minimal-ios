@@ -11,9 +11,6 @@
 //
 import Foundation
 import Proximiio
-#if canImport(ProximiioBlueiot)
-import ProximiioBlueiot
-#endif
 
 enum WristbandCopy {
 

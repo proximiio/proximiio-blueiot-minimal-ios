@@ -7,9 +7,6 @@
 //
 import Proximiio
 import SwiftUI
-#if canImport(ProximiioBlueiot)
-import ProximiioBlueiot
-#endif
 
 struct WristbandStatus: View {
     @ObservedObject var session: WristbandSession

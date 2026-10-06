@@ -17,9 +17,6 @@
 import CoreLocation
 import Foundation
 import Proximiio
-#if canImport(ProximiioBlueiot)
-import ProximiioBlueiot
-#endif
 
 @MainActor
 final class WristbandSession: ObservableObject {

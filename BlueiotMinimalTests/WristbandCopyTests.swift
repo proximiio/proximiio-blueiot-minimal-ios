@@ -8,9 +8,6 @@
 //
 import Proximiio
 import XCTest
-#if canImport(ProximiioBlueiot)
-import ProximiioBlueiot
-#endif
 @testable import BlueiotMinimal
 
 final class WristbandCopyTests: XCTestCase {

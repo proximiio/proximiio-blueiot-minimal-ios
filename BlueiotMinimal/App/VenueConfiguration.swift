@@ -9,9 +9,6 @@
 //
 import Foundation
 import Proximiio
-#if canImport(ProximiioBlueiot)
-import ProximiioBlueiot
-#endif
 
 enum VenueConfiguration {
     /// Proximi.io application token — `PROXIMIIO_APPLICATION_TOKEN`.

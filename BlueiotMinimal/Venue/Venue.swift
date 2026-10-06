@@ -22,9 +22,6 @@
 import Foundation
 import Proximiio
 import UserNotifications
-#if canImport(ProximiioBlueiot)
-import ProximiioBlueiot
-#endif
 
 @MainActor
 final class Venue {
