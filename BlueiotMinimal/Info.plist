@@ -28,6 +28,8 @@
 	<string>Bluetooth is used by indoor positioning.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>The camera helps resolve the direction of nearby ultra-wideband anchors. This app does not use it.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Confirms that you are in the venue when you connect a wristband. This app asks for location only while you use it.</string>
 	<key>NSLocationTemporaryUsageDescriptionDictionary</key>
 	<dict>
 		<key>WristbandTakeover</key>

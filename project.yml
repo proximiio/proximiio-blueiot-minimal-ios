@@ -115,6 +115,10 @@ targets:
         # direction. Without the camera string, App Store upload fails with
         # ITMS-90683.
         NSLocationWhenInUseUsageDescription: Confirms that you are in the venue when you connect a wristband, and keeps your position updating while the app is in your pocket or the screen is locked. Your position on the map comes from the venue's anchors, not from this phone.
+        # This app asks only for When In Use. The SDK binary also references
+        # `requestAlwaysAuthorization`, so App Store validation requires this
+        # key too (ITMS-90683).
+        NSLocationAlwaysAndWhenInUseUsageDescription: Confirms that you are in the venue when you connect a wristband. This app asks for location only while you use it.
         # Shown when the visitor allowed approximate location only and a
         # wristband bind needs a precise fix. The key is the purpose key
         # `LocationAccess.requestFullAccuracy()` passes to
