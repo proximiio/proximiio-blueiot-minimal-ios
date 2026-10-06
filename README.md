@@ -25,10 +25,19 @@ No settings screen, no diagnostics UI, no staff mode, no engine switch, no event
 log, no offline package, no step list. Nothing reorders a started visit without a tap.
 The SDK provides each of these; this app omits them.
 
-The one switch is **Smooth position** in the system Settings app, under the
+The **Smooth position** switch is in the system Settings app, under the
 app's name (`Settings.bundle`): off draws the dot exactly on each relay fix
 (`PositionStyle.smoothing = .none`) for comparison with the venue's RTLS, and
 applies when the app returns to the foreground.
+
+The **Smoothing** group under it sets `PositionStyle.smoothingTuning`, for
+testers who compare tunings on one venue. Each field title shows the unit and
+the map default. The values apply only while Smooth position is on, when the
+app returns to the foreground. An empty or invalid field uses the default; a
+comma is accepted as the decimal separator; the map clamps out-of-range values.
+**Reset to defaults** is a switch, because a Settings bundle has no buttons: the
+app empties every field and turns the switch off when it returns to the
+foreground. The diagnostics log records the values in use.
 
 ## Requirements
 
@@ -104,7 +113,7 @@ xcodebuild -project BlueiotMinimal.xcodeproj -scheme BlueiotMinimal \
 ```
 
 `project.yml` pins the published binary distributions to exact versions: the
-Proximi.io SDK at `6.0.0-beta.51` and the Proximi.io map at `6.0.0-beta.30`.
+Proximi.io SDK at `6.0.0-beta.51` and the Proximi.io map at `6.0.0-beta.31`.
 MapLibre (`6.29.0`) arrives through the map package and must not be declared
 separately.
 
@@ -114,7 +123,7 @@ separately.
 | --- | --- |
 | `App/BlueiotMinimalApp.swift` | The launch order: wristband → location → notifications → map. The SDK starts after the location step |
 | `App/VenueConfiguration.swift` | The build-time values and the `BlueiotBindingConfiguration` built from them |
-| `App/PositionSmoothingSetting.swift` | The **Smooth position** switch from `Settings.bundle`, and the map smoothing it selects |
+| `App/PositionSmoothingSetting.swift` | The **Smooth position** switch and **Smoothing** values from `Settings.bundle`, and the map smoothing and tuning they select |
 | `Venue/WristbandSession.swift` | The wristband session: `restore()`, the binding state, the location dialogs before a bind, `bind(tagID:)` and `end()` |
 | `Venue/Venue.swift` | SDK start, attachment of the binding's position provider, and a notification per geofence event |
 | `Venue/VenuePOI.swift` | The venue's features as searchable places |
@@ -395,7 +404,7 @@ Crash logs from a TestFlight build symbolicate the app's own code. The
 `MapLibre`, `ProximiioBinary` and `ProximiioMapBinary` frameworks are SwiftPM
 binary targets whose dSYMs are not in the archive by design; App Store Connect
 reports "Upload Symbols Failed" for each, which is expected. Proximi.io support
-has the dSYMs for the pinned versions (SDK 6.0.0-beta.51, map 6.0.0-beta.30) from
+has the dSYMs for the pinned versions (SDK 6.0.0-beta.51, map 6.0.0-beta.31) from
 the GitHub source releases.
 
 ## Playing a journey through the sandbox relay-api

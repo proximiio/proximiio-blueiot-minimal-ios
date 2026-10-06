@@ -66,9 +66,12 @@ struct VenueMapScreen: View {
             widthPoints: 6,
             cap: .round
         ))
-        // The "Smooth position" switch in the Settings app
-        // (PositionSmoothingSetting.swift). Off draws the dot exactly on each fix.
+        // The "Smooth position" switch and the "Smoothing" values in the
+        // Settings app (PositionSmoothingSetting.swift). Off draws the dot
+        // exactly on each fix. The values apply only while the switch is on.
+        PositionSmoothingSetting.resetTuningIfRequested()
         options.position.smoothing = PositionSmoothingSetting.smoothing()
+        options.position.smoothingTuning = PositionSmoothingSetting.tuning()
         _session = StateObject(wrappedValue: ProximiioMapSession(sdk: venue.sdk, options: options))
     }
 
@@ -120,8 +123,9 @@ struct VenueMapScreen: View {
             places = VenuePOI.all(in: await venue.sdk.features())
         }
         .task { recordSmoothing() }
-        // The "Smooth position" switch is changed in the Settings app, so the
-        // app is in the background at that time. The new value is applied when
+        // The "Smooth position" switch and the "Smoothing" values are changed
+        // in the Settings app, so the app is in the background at that time.
+        // The new values are applied when
         // the app becomes active again; a relaunch is not needed.
         .onChange(of: scenePhase) { _, phase in
             guard phase == .active else { return }
@@ -265,21 +269,26 @@ struct VenueMapScreen: View {
         .accessibilityAddTraits(session.cameraMode == .free ? [] : .isSelected)
     }
 
-    /// Applies the stored "Smooth position" value to the map session when it
-    /// differs from the session's. Assigning `session.options` takes effect
-    /// from the next frame and does not reload the style.
+    /// Applies the stored "Smooth position" value and "Smoothing" values to the
+    /// map session when they differ from the session's. A "Reset to defaults"
+    /// request is handled first. Assigning `session.options` takes effect from
+    /// the next frame and does not reload the style.
     private func applySmoothingSetting() {
+        PositionSmoothingSetting.resetTuningIfRequested()
         let smoothing = PositionSmoothingSetting.smoothing()
-        guard session.options.position.smoothing != smoothing else { return }
+        let tuning = PositionSmoothingSetting.tuning()
+        guard session.options.position.smoothing != smoothing
+            || session.options.position.smoothingTuning != tuning else { return }
         session.options.position.smoothing = smoothing
+        session.options.position.smoothingTuning = tuning
         recordSmoothing()
     }
 
-    /// Writes the map smoothing in use to the diagnostics log, so a log from a
-    /// test with the switch off shows that the dot was drawn without smoothing.
+    /// Writes the map smoothing in use, with its tuning values, to the
+    /// diagnostics log. A log from a test then shows which values the dot was
+    /// drawn with.
     private func recordSmoothing() {
-        let isOn = session.options.position.smoothing != .none
-        Proximiio.recordDiagnosticsEvent(.state, "position smoothing: \(isOn ? "on" : "off")")
+        Proximiio.recordDiagnosticsEvent(.state, PositionSmoothingSetting.summary(of: session.options.position))
     }
 
     /// Picks a tapped place through `route(to:)`, the call a search pick makes:
