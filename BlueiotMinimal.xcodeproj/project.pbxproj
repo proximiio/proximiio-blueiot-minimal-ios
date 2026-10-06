@@ -8,7 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		099507348DA4093E05606482 /* LocationPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = 092355E744495DCCE55315AA /* LocationPrompt.swift */; };
-		40EACAB92D5A6281D9DDE22E /* ProximiioMap in Frameworks */ = {isa = PBXBuildFile; productRef = 5764333272A1FAC95E9ED601 /* ProximiioMap */; };
 		41C18484D7E19569EB52F5CE /* NotificationPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7B6B01E86D2FE1A3DF75521 /* NotificationPrompt.swift */; };
 		42772725E74792B55FDD2356 /* JourneyPickerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE06FF26F4AAFA1DA49F2037 /* JourneyPickerTests.swift */; };
 		4320D9B210F9307F30386401 /* POISearchSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAE7CA172E674FD6B5A16A7A /* POISearchSheet.swift */; };
@@ -34,7 +33,7 @@
 		C50AC9B431153ED0F8CE5CFD /* GuidanceLine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39D2104EFFCA3D6A4A7A99D0 /* GuidanceLine.swift */; };
 		C79F66DBA45BA3C197A9A9B0 /* VisitRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E87C65FF1AAA5192A812D2F /* VisitRules.swift */; };
 		CABF34E22C81D3D7FC6E0387 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 807431AABAB1DD9642569D05 /* Assets.xcassets */; };
-		CD5F76DA126ED4496B77F93D /* ProximiioBlueiot in Frameworks */ = {isa = PBXBuildFile; productRef = 746E8861359EF4E0493A4F2C /* ProximiioBlueiot */; };
+		CD5F76DA126ED4496B77F93D /* ProximiioMap in Frameworks */ = {isa = PBXBuildFile; productRef = 5764333272A1FAC95E9ED601 /* ProximiioMap */; };
 		E50D2252328D51DA6ED05431 /* DeviationPromptTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2571BE3A11B571884C58DB69 /* DeviationPromptTests.swift */; };
 		EF10C1372AD27EFE8A78C58B /* BlueiotMinimalApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07522316905DD049DF83CDD5 /* BlueiotMinimalApp.swift */; };
 		FBAFD7FD1662DFDE4E966837 /* JourneyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C811F61C4E954A692AA12DB6 /* JourneyTests.swift */; };
@@ -68,7 +67,6 @@
 		3B333BB24371B5B046CEC74E /* GeofenceNotificationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeofenceNotificationTests.swift; sourceTree = "<group>"; };
 		3CFC1F37663CB627F86460F2 /* BlueiotMinimalTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = BlueiotMinimalTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		5E87C65FF1AAA5192A812D2F /* VisitRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisitRules.swift; sourceTree = "<group>"; };
-		61E26AC5C69BC429B6D31EB7 /* proximiio-ios-map-v6 */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "proximiio-ios-map-v6"; path = "../proximiio-ios-map-v6"; sourceTree = SOURCE_ROOT; };
 		65F7C141BA52D64EF7B32140 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		672CE9E9ED95501810A58F6F /* VenuePOI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VenuePOI.swift; sourceTree = "<group>"; };
 		766868470525B50835760888 /* JourneyBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JourneyBar.swift; sourceTree = "<group>"; };
@@ -80,7 +78,6 @@
 		BE06FF26F4AAFA1DA49F2037 /* JourneyPickerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JourneyPickerTests.swift; sourceTree = "<group>"; };
 		C811F61C4E954A692AA12DB6 /* JourneyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JourneyTests.swift; sourceTree = "<group>"; };
 		CABF78A41B4A53631B5B8192 /* JourneyPlayback.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JourneyPlayback.swift; sourceTree = "<group>"; };
-		D43A14F03C9719B0ED76C1F8 /* proximiio-ios-sdk-v6 */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "proximiio-ios-sdk-v6"; path = "../proximiio-ios-sdk-v6"; sourceTree = SOURCE_ROOT; };
 		E015A6621E85A46797155A1B /* WristbandCopy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WristbandCopy.swift; sourceTree = "<group>"; };
 		E185E1345ABCBCD9C8FD96E7 /* VenueConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VenueConfiguration.swift; sourceTree = "<group>"; };
 		ED64BC01895914D88C49C6F2 /* JourneyPickerSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JourneyPickerSheet.swift; sourceTree = "<group>"; };
@@ -95,8 +92,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				BFD50B8F4E0FA87992F6461E /* Proximiio in Frameworks */,
-				CD5F76DA126ED4496B77F93D /* ProximiioBlueiot in Frameworks */,
-				40EACAB92D5A6281D9DDE22E /* ProximiioMap in Frameworks */,
+				CD5F76DA126ED4496B77F93D /* ProximiioMap in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -109,7 +105,6 @@
 				E295F30C2F6A593363CEDCDB /* BlueiotMinimal */,
 				69330A4939A1DBD0C5A244BB /* BlueiotMinimalTests */,
 				9708DFEABBF59F0BC859FF50 /* Config */,
-				F4F8341410A6F9D705B98BA2 /* Packages */,
 				5AD72386A6F950EC8F3443F8 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -199,15 +194,6 @@
 			path = BlueiotMinimal;
 			sourceTree = "<group>";
 		};
-		F4F8341410A6F9D705B98BA2 /* Packages */ = {
-			isa = PBXGroup;
-			children = (
-				61E26AC5C69BC429B6D31EB7 /* proximiio-ios-map-v6 */,
-				D43A14F03C9719B0ED76C1F8 /* proximiio-ios-sdk-v6 */,
-			);
-			name = Packages;
-			sourceTree = "<group>";
-		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -226,7 +212,6 @@
 			name = BlueiotMinimal;
 			packageProductDependencies = (
 				481EF75981CE52268A990007 /* Proximiio */,
-				746E8861359EF4E0493A4F2C /* ProximiioBlueiot */,
 				5764333272A1FAC95E9ED601 /* ProximiioMap */,
 			);
 			productName = BlueiotMinimal;
@@ -281,8 +266,8 @@
 			mainGroup = 02C5935F4C506F1733CD2966;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				A1F57AFF7168C34CB6FE7B94 /* XCLocalSwiftPackageReference "../proximiio-ios-sdk-v6" */,
-				C9A79098539FC72B8DB2861A /* XCLocalSwiftPackageReference "../proximiio-ios-map-v6" */,
+				C82611E0490E3DF0A6F7D3C3 /* XCRemoteSwiftPackageReference "proximiio-sdk-ios-binary" */,
+				375E16056034A81439E4BB5A /* XCRemoteSwiftPackageReference "proximiio-map-ios-binary" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 5AD72386A6F950EC8F3443F8 /* Products */;
@@ -601,29 +586,35 @@
 		};
 /* End XCConfigurationList section */
 
-/* Begin XCLocalSwiftPackageReference section */
-		A1F57AFF7168C34CB6FE7B94 /* XCLocalSwiftPackageReference "../proximiio-ios-sdk-v6" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = "../proximiio-ios-sdk-v6";
+/* Begin XCRemoteSwiftPackageReference section */
+		375E16056034A81439E4BB5A /* XCRemoteSwiftPackageReference "proximiio-map-ios-binary" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/proximiio/proximiio-map-ios-binary";
+			requirement = {
+				kind = exactVersion;
+				version = "6.0.0-beta.29";
+			};
 		};
-		C9A79098539FC72B8DB2861A /* XCLocalSwiftPackageReference "../proximiio-ios-map-v6" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = "../proximiio-ios-map-v6";
+		C82611E0490E3DF0A6F7D3C3 /* XCRemoteSwiftPackageReference "proximiio-sdk-ios-binary" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/proximiio/proximiio-sdk-ios-binary";
+			requirement = {
+				kind = exactVersion;
+				version = "6.0.0-beta.50";
+			};
 		};
-/* End XCLocalSwiftPackageReference section */
+/* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
 		481EF75981CE52268A990007 /* Proximiio */ = {
 			isa = XCSwiftPackageProductDependency;
+			package = C82611E0490E3DF0A6F7D3C3 /* XCRemoteSwiftPackageReference "proximiio-sdk-ios-binary" */;
 			productName = Proximiio;
 		};
 		5764333272A1FAC95E9ED601 /* ProximiioMap */ = {
 			isa = XCSwiftPackageProductDependency;
+			package = 375E16056034A81439E4BB5A /* XCRemoteSwiftPackageReference "proximiio-map-ios-binary" */;
 			productName = ProximiioMap;
-		};
-		746E8861359EF4E0493A4F2C /* ProximiioBlueiot */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = ProximiioBlueiot;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

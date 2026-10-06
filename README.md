@@ -82,12 +82,12 @@ names the key to check.
 
 ```sh
 brew install xcodegen          # once
-xcodegen generate --spec project.local.yml   # until SDK 6.0.0-beta.50 is published
+xcodegen generate
 open BlueiotMinimal.xcodeproj
 ```
 
 `BlueiotMinimal.xcodeproj` is committed; `xcodegen generate` is needed again only
-after `project.yml` or `project.local.yml` changes.
+after `project.yml` changes.
 
 From the command line:
 
@@ -102,27 +102,6 @@ xcodebuild -project BlueiotMinimal.xcodeproj -scheme BlueiotMinimal \
 Proximi.io SDK at `6.0.0-beta.50` and the Proximi.io map at `6.0.0-beta.29`.
 MapLibre (`6.29.0`) arrives through the map package and must not be declared
 separately.
-
-The wristband binding client first ships in SDK `6.0.0-beta.50`. Until that
-version and map `6.0.0-beta.29` are published, the committed project is
-generated from `project.local.yml`. It includes `project.yml` and replaces only
-the package sources: the SDK from `../proximiio-ios-sdk-v6` and the map from
-`../proximiio-ios-map-v6`, both source checkouts next to this repository. The
-map binary cannot be combined with the SDK source: it depends on the SDK binary,
-and the graph would contain two `Proximiio` modules. The source SDK is split into
-modules, so `project.local.yml` also links the `ProximiioBlueiot` product; the
-code imports it under `#if canImport(ProximiioBlueiot)`.
-
-When both versions are published:
-
-```sh
-rm project.local.yml
-xcodegen generate
-xcodebuild -resolvePackageDependencies -project BlueiotMinimal.xcodeproj
-```
-
-Then commit `project.pbxproj`, `Package.resolved` and the removal of
-`project.local.yml`, and remove the "until … is published" note above.
 
 ## Where things are
 

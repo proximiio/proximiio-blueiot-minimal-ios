@@ -40,10 +40,6 @@ packages:
   # The binary is one flattened module behind two product names. `import Proximiio`
   # brings the whole SDK into scope, including the BlueIoT wristband binding
   # client this app positions from.
-  #
-  # The wristband binding client first ships in 6.0.0-beta.50. Until both
-  # versions below are published, generate the project from project.local.yml,
-  # which builds the SDK and the map from local source checkouts.
   Proximiio:
     url: https://github.com/proximiio/proximiio-sdk-ios-binary
     exactVersion: "6.0.0-beta.50"
