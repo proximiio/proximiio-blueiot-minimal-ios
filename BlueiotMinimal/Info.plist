@@ -2,12 +2,10 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>BlueiotCloudRelayToken</key>
-	<string>$(BLUEIOT_CLOUD_RELAY_TOKEN)</string>
-	<key>BlueiotCloudRelayURL</key>
-	<string>$(BLUEIOT_CLOUD_RELAY_URL)</string>
-	<key>BlueiotGroundFloorNo</key>
-	<string>$(BLUEIOT_GROUND_FLOOR_NO)</string>
+	<key>BlueiotRelayAppToken</key>
+	<string>$(BLUEIOT_RELAY_APP_TOKEN)</string>
+	<key>BlueiotRelayURL</key>
+	<string>$(BLUEIOT_RELAY_URL)</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
@@ -30,8 +28,13 @@
 	<string>Bluetooth is used by indoor positioning.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>The camera helps resolve the direction of nearby ultra-wideband anchors. This app does not use it.</string>
+	<key>NSLocationTemporaryUsageDescriptionDictionary</key>
+	<dict>
+		<key>WristbandTakeover</key>
+		<string>Your precise location confirms that you are in the venue before this phone follows the wristband.</string>
+	</dict>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Keeps your position updating while the app is in your pocket or the screen is locked, so the venue can go on placing you on the map. Your position comes from the venue's anchors, not from this phone.</string>
+	<string>Confirms that you are in the venue when you connect a wristband, and keeps your position updating while the app is in your pocket or the screen is locked. Your position on the map comes from the venue's anchors, not from this phone.</string>
 	<key>NSMotionUsageDescription</key>
 	<string>Motion data smooths the position between updates.</string>
 	<key>NSNearbyInteractionUsageDescription</key>

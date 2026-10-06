@@ -2,58 +2,89 @@
 //  WristbandPrompt.swift
 //  BlueiotMinimal
 //
-//  Wristband prompt. Shown full-screen on the first run and as a sheet when the
-//  id is changed; the same view in both cases, so there is no settings screen.
-//  `VenueMapScreen` opens the sheet.
+//  Wristband prompt. Shown full-screen while no session is active, and as a
+//  sheet to connect another band; the same view in both cases, so there is no
+//  settings screen. `VenueMapScreen` opens the sheet.
+//
+//  Connect binds the typed label through `WristbandSession`. Before the bind it
+//  asks for location when the relay-api needs the phone's location for a
+//  take-over and iOS can still show the dialog.
 //
 import ProximiioMap
 import SwiftUI
 
 struct WristbandPrompt: View {
-    /// Initial text: empty on the first run, the current id when changing it.
-    let current: String
+    @ObservedObject var session: WristbandSession
+    /// Why the previous session ended, or `nil`.
+    let notice: String?
     /// The credits of the loaded map style. The app hides the map's attribution ⓘ
-    /// (`VenueMapScreen`), so they are listed here. Empty on the first run, before a map exists.
+    /// (`VenueMapScreen`), so they are listed here. Empty before a map exists.
     let credits: [MapAttribution]
-    /// `nil` on the first run; there is no previous screen.
+    /// `nil` on the full-screen prompt; there is no previous screen.
     let onCancel: (() -> Void)?
-    let onSave: (WristbandID) -> Void
+    /// Called after a successful bind.
+    let onConnected: () -> Void
 
     @State private var text: String
+    @State private var pendingAsk: WristbandSession.LocationAsk?
+    @State private var isConnecting = false
+    @State private var failure: String?
 
     init(
-        current: String = "",
+        session: WristbandSession,
+        notice: String? = nil,
         credits: [MapAttribution] = [],
         onCancel: (() -> Void)? = nil,
-        onSave: @escaping (WristbandID) -> Void
+        onConnected: @escaping () -> Void = {}
     ) {
-        self.current = current
+        self.session = session
+        self.notice = notice
         self.credits = credits
         self.onCancel = onCancel
-        self.onSave = onSave
-        _text = State(initialValue: current)
+        self.onConnected = onConnected
+        _text = State(initialValue: session.lastLabel)
     }
 
-    private var parsed: WristbandID? { WristbandID(text: text) }
+    private var label: String { text.trimmingCharacters(in: .whitespacesAndNewlines) }
 
     var body: some View {
         NavigationStack {
             Form {
+                if let notice {
+                    Section {
+                        Label(notice, systemImage: "info.circle")
+                    }
+                }
+
                 Section {
                     TextField("1000045550", text: $text)
                         .keyboardType(.asciiCapable)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
                         .font(.system(.body, design: .monospaced))
+                        .submitLabel(.go)
+                        .onSubmit(connect)
+                        .disabled(isConnecting)
                 } header: {
                     Text("Wristband number")
                 } footer: {
-                    // The footer shows which tag the text parsed to. A validity error
-                    // alone would not reveal a mistyped digit.
-                    if let parsed {
-                        Text("Following tag \(parsed.canonical) (\(parsed.hexadecimal)).")
+                    if let pendingAsk {
+                        Text(WristbandCopy.explanation(for: pendingAsk))
                     } else {
                         Text("The number printed on your band.")
+                    }
+                }
+
+                if isConnecting {
+                    Section {
+                        HStack(spacing: 10) {
+                            ProgressView()
+                            Text("Connecting…")
+                        }
+                    }
+                } else if let failure {
+                    Section {
+                        Text(failure).foregroundStyle(.red)
                     }
                 }
 
@@ -86,9 +117,36 @@ struct WristbandPrompt: View {
                     }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { if let parsed { onSave(parsed) } }
-                        .disabled(parsed == nil)
+                    Button("Connect", action: connect)
+                        .disabled(label.isEmpty || isConnecting || session.binding == nil)
                 }
+            }
+            // Reads `/v1/meta` (cached by the SDK) and the authorization, so the
+            // footer names the dialog before Connect shows it.
+            .task { pendingAsk = await session.locationAsk() }
+        }
+    }
+
+    /// Asks for location when needed, then binds. A refused location does not
+    /// stop the bind: a band at the reception desk binds without one.
+    private func connect() {
+        let label = label
+        guard !label.isEmpty, !isConnecting else { return }
+        isConnecting = true
+        failure = nil
+        Task {
+            if let ask = await session.locationAsk() {
+                await session.ask(ask)
+            }
+            pendingAsk = nil
+            do {
+                try await session.bind(label)
+                isConnecting = false
+                onConnected()
+            } catch {
+                isConnecting = false
+                failure = WristbandCopy.message(for: error)
+                pendingAsk = await session.locationAsk()
             }
         }
     }

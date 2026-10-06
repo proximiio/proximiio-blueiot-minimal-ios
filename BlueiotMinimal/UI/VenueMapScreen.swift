@@ -12,7 +12,9 @@
 //  Turn-by-turn is enabled with one assignment (`guidanceRules`); only the
 //  instruction text belongs to the app.
 //
-//  Product chrome goes in `bottomBar`. Product screens go beside this one.
+//  The wristband session's state and the End visit action are at the top
+//  (`WristbandStatus`). Product chrome goes in `bottomBar`. Product screens go
+//  beside this one.
 //
 import Proximiio
 import ProximiioMap
@@ -20,10 +22,9 @@ import SwiftUI
 
 struct VenueMapScreen: View {
     let venue: Venue
-    /// The followed wristband id and the save callback for a new one. The sheet
-    /// that changes it opens on the long press below and also lists the map credits.
-    let wristband: String
-    let onSaveWristband: (WristbandID) -> Void
+    /// The wristband session. The sheet that connects another band opens on the
+    /// long press below and also lists the map credits.
+    @ObservedObject var wristband: WristbandSession
 
     /// The map session is created here rather than by `ProximiioMapView(sdk:)`
     /// so this screen can call `setRoute` on it.
@@ -40,10 +41,9 @@ struct VenueMapScreen: View {
     @State private var isChangingWristband = false
 
     @MainActor
-    init(venue: Venue, wristband: String, onSaveWristband: @escaping (WristbandID) -> Void) {
+    init(venue: Venue, wristband: WristbandSession) {
         self.venue = venue
         self.wristband = wristband
-        self.onSaveWristband = onSaveWristband
         _session = StateObject(wrappedValue: ProximiioMapSession(
             sdk: venue.sdk,
             options: MapOptions(
@@ -74,7 +74,7 @@ struct VenueMapScreen: View {
         ZStack(alignment: .bottom) {
             ProximiioMapView(session: session)
                 .ignoresSafeArea()
-                // Changes the wristband without a settings screen: press and hold
+                // Connects another wristband without a settings screen: press and hold
                 // the map for 1.5 s. `simultaneousGesture` keeps the map's own pan,
                 // pinch and rotate. There is intentionally no visible control; a
                 // visitor does not need it, and staff are told once.
@@ -90,6 +90,10 @@ struct VenueMapScreen: View {
             } else {
                 bottomBar
             }
+        }
+        .overlay(alignment: .top) {
+            WristbandStatus(session: wristband)
+                .padding(.top, 8)
         }
         #if DEBUG
         // Debug builds only: the journey picker and playback controls
@@ -135,10 +139,10 @@ struct VenueMapScreen: View {
             // `session.attributions` is read on each body evaluation, so the
             // sheet lists the credits of the loaded style.
             WristbandPrompt(
-                current: wristband,
+                session: wristband,
                 credits: session.attributions,
                 onCancel: { isChangingWristband = false },
-                onSave: { isChangingWristband = false; onSaveWristband($0) }
+                onConnected: { isChangingWristband = false }
             )
         }
     }

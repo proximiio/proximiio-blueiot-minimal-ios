@@ -30,9 +30,8 @@
  * `list` does not go through LiveView because LiveView's proxy accepts only a
  * browser session cookie.
  *
- * `--ground-floor` is the floor number the receiving app uses for the ground
- * floor. Default -1: the museum's LocalSense engine numbers the ground floor -1,
- * and this app sets `BLUEIOT_GROUND_FLOOR_NO = -1`. Set it to the app's value.
+ * `--ground-floor` is the venue engine's floor number for the ground floor.
+ * Default -1: the museum's LocalSense engine numbers the ground floor -1.
  * A negative value is passed as `--ground-floor -1`.
  *
  * `--walker N` selects which of the organisation's wristbands on the relay the
@@ -42,7 +41,7 @@
  * already playing on that relay.
  *
  * `start` without `--preview` injects positions into a shared sandbox relay.
- * Every app that follows the walker's tag id on that relay receives them.
+ * Every app bound to the walker's tag id on that relay receives them.
  */
 
 import { readFileSync, openSync, fchmodSync, writeSync, closeSync } from 'node:fs'

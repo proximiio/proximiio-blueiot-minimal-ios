@@ -2,26 +2,29 @@
 //  Venue.swift
 //  BlueiotMinimal
 //
-//  Positioning: SDK start, cloud relay attachment for one wristband, and a local
-//  notification per geofence event.
+//  Positioning: SDK start, attachment of the wristband binding's position
+//  provider, and a local notification per geofence event.
 //
-//  The venue's BlueIoT anchors locate the wristband and report to a Proximi.io
-//  cloud relay; the phone scans nothing.
+//  The venue's BlueIoT anchors locate the wristband and report to the
+//  Proximi.io relay-api; the phone scans nothing.
 //  `ProximiioConfiguration.relayOnly(token:runsInBackground:)` is the preset for
 //  this integration: it disables the SDK's iBeacon, Eddystone and UWB sources.
-//  The rest is two calls, start the SDK and attach the relay, and one
+//  The rest is two calls, start the SDK and attach the provider, and one
 //  notification per geofence event.
 //
 //  Background positioning requires four settings. Each one missing has the same
 //  symptom: positioning stops 30 seconds after the screen locks, as if the relay
-//  had disconnected. `runsInBackground: true` on the SDK configuration and on
-//  the relay provider configuration (both in this file); the `location`
-//  background mode and its purpose string (`project.yml`); and location
-//  authorization (`LocationPrompt`).
+//  had disconnected. `runsInBackground: true` on the SDK configuration (this
+//  file) and on the binding configuration (`VenueConfiguration.binding`); the
+//  `location` background mode and its purpose string (`project.yml`); and
+//  location authorization (`LocationPrompt`).
 //
 import Foundation
 import Proximiio
 import UserNotifications
+#if canImport(ProximiioBlueiot)
+import ProximiioBlueiot
+#endif
 
 @MainActor
 final class Venue {
@@ -30,12 +33,12 @@ final class Venue {
     /// venue, the floors and the live position from it.
     let sdk: Proximiio
 
-    /// The name of the attached provider, kept so a later `follow(_:)` can detach
-    /// it. Detaching is by name.
-    private var attachedProvider: String?
+    /// The binding client whose provider delivers the wristband's positions.
+    private let binding: BlueiotWristbandBinding
 
-    /// The followed wristband. `attachRelay()` attaches the relay for it.
-    private(set) var wristband: WristbandID?
+    /// The name of the attached provider, kept so the debug journey playback can
+    /// detach it. Detaching is by name.
+    private var attachedProvider: String?
 
     #if DEBUG
     /// Debug builds only. The journey playback that replaces the relay, and its
@@ -43,8 +46,9 @@ final class Venue {
     let playback = JourneyPlaybackController()
     #endif
 
-    private init(sdk: Proximiio) {
+    private init(sdk: Proximiio, binding: BlueiotWristbandBinding) {
         self.sdk = sdk
+        self.binding = binding
         announceGeofences()
     }
 
@@ -54,8 +58,8 @@ final class Venue {
         .relayOnly(token: token, runsInBackground: true)
     }
 
-    /// Requests location authorization, authenticates, starts positioning and
-    /// downloads the venue.
+    /// Requests location authorization, authenticates, starts positioning,
+    /// downloads the venue and attaches the binding's position provider.
     ///
     /// The four calls run in this order and none is optional:
     ///  1. `requestPermissions()` shows the system location dialog behind
@@ -69,67 +73,36 @@ final class Venue {
     ///  4. `loadRouteNetwork()` downloads the venue GeoJSON: the POIs this app
     ///     searches and the path network `computeRoute` uses, cached locally. It
     ///     is the only network call wayfinding needs.
-    static func start(token: String) async throws -> Venue {
+    ///
+    /// The binding's provider is attached once. It follows whichever session
+    /// the binding holds, so a new bind, a take-over or an ended visit needs no
+    /// re-attach.
+    static func start(token: String, binding: BlueiotWristbandBinding) async throws -> Venue {
         let sdk = try Proximiio(configuration: configuration(token: token))
         _ = await sdk.requestPermissions()
         _ = try await sdk.authenticate()
         try await sdk.start()
         _ = try await sdk.loadRouteNetwork()
-        return Venue(sdk: sdk)
-    }
-
-    /// Points positioning at one wristband.
-    ///
-    /// Can be called again with a different id: the previous provider is
-    /// detached first, so a change is a re-attach, not an SDK restart.
-    ///
-    /// Floor resolution is done by the SDK. It resolves engine floor numbers
-    /// against the floor levels it synced, applying `engineGroundFloorNumber`,
-    /// and logs a fix whose number matches no
-    /// floor. Do not pass `floorNoMap`: a supplied table switches that
-    /// derivation off.
-    func follow(_ wristband: WristbandID) async {
-        self.wristband = wristband
-        await detachProvider()
+        let venue = Venue(sdk: sdk, binding: binding)
         #if DEBUG
-        await playback.end()
         // Debug builds launched with `-journeyPlayback <id>` play a journey instead
-        // of attaching the relay. See JourneyPlaybackLaunch.swift.
+        // of attaching the binding's provider. See JourneyPlaybackLaunch.swift.
         if let request = JourneyPlaybackLaunch.request(from: ProcessInfo.processInfo.arguments) {
-            await playJourney(id: request.journeyID, options: request.options)
-            return
+            await venue.playJourney(id: request.journeyID, options: request.options)
+            return venue
         }
         #endif
-        await attachRelay()
+        await venue.attachRelay()
+        return venue
     }
 
-    /// Attaches the cloud relay for `wristband`. Does nothing without a
-    /// wristband or with a relay host that does not parse.
+    /// Attaches the binding's position provider.
+    ///
+    /// The relay-api sends Proximi.io floor levels and, when it knows it, the
+    /// floor id. The SDK resolves a level against the floors it synced.
     private func attachRelay() async {
-        guard let wristband,
-              let host = VenueConfiguration.relayHost,
-              let endpoint = BlueiotCloudRelayEndpoint(text: host)
-        else { return }
-
-        var configuration = BlueiotCloudRelayConfiguration(
-            endpoint: endpoint,
-            token: VenueConfiguration.relayToken,
-            tagID: wristband.canonical,
-            // Without this the SDK pauses the provider on backgrounding, regardless
-            // of the process's own background permission.
-            runsInBackground: true
-        )
-        // `engineGroundFloorNumber` is the engine's number for the ground floor.
-        // Proximi.io numbers the ground floor 0. This venue's engine numbers
-        // floors -1, 1, 2, 3, 4 with no 0, and engine -1 is the ground floor.
-        // At -1 the SDK shifts the ground floor and the floors below it:
-        // engine -1 is level 0, engine -2 is level -1, engine 1 stays level 1.
-        // Engine 0 matches no floor and is logged.
-        configuration.engineGroundFloorNumber = VenueConfiguration.groundFloorNumber
-
-        let provider = BlueiotCloudRelayPositionProvider(configuration: configuration)
+        let provider = binding.positionProvider
         attachedProvider = provider.name
-        Proximiio.recordDiagnosticsEvent(.state, "wristband: \(wristband.canonical)")
         await sdk.attachPositionProvider(provider)
     }
 
@@ -156,7 +129,7 @@ final class Venue {
     }
 
     /// Debug builds only. Plays `journey` in place of the attached provider,
-    /// usually the relay. The journey picker uses this call. `journey` must pass
+    /// usually the binding's. The journey picker uses this call. `journey` must pass
     /// `validationFailure()`; the provider plays what it is given.
     func playJourney(_ journey: ProximiioJourney, options: JourneyPlaybackOptions) async {
         await detachProvider()
@@ -169,8 +142,8 @@ final class Venue {
         playback.attached(provider)
     }
 
-    /// Debug builds only. Detaches the playback and attaches the relay for the
-    /// followed wristband, as `follow(_:)` does without a launch argument.
+    /// Debug builds only. Detaches the playback and attaches the binding's
+    /// provider again, as `start` does without a launch argument.
     func stopJourney() async {
         await detachProvider()
         await playback.end()

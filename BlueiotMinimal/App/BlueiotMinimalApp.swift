@@ -3,10 +3,11 @@
 //  BlueiotMinimal
 //
 //  App entry point. Launch order: wristband prompt, location prompt, notification
-//  prompt, map. The SDK starts when the location prompt is answered.
+//  prompt, map. The SDK starts when a wristband session is active and the
+//  location prompt is answered.
 //
-//  This level owns the diagnostics log, the foreground notification delegate and
-//  the launch order only. There is no tab bar or settings screen. Add product
+//  This level owns the diagnostics log, the foreground notification delegate,
+//  the wristband session and the launch order only. There is no tab bar or settings screen. Add product
 //  screens where `VenueMapScreen` is built.
 //
 import CoreLocation
@@ -52,7 +53,8 @@ struct BlueiotMinimalApp: App {
 enum LaunchStep: Equatable {
     case wristband, location, notifications, map
 
-    /// Pure function, covered by tests.
+    /// Pure function, covered by tests. `hasWristband` is `true` while a
+    /// wristband session is active.
     static func current(hasWristband: Bool, owesLocationAsk: Bool, owesNotificationAsk: Bool) -> LaunchStep {
         if !hasWristband { return .wristband }
         if owesLocationAsk { return .location }
@@ -61,13 +63,16 @@ enum LaunchStep: Equatable {
     }
 }
 
-/// Shows the prompts that are owed, then the map. A returning visitor with every
-/// answer given opens the map directly.
+/// Shows the prompts that are owed, then the map. A returning visitor with an
+/// active session and every answer given opens the map directly.
 struct RootView: View {
-    /// Loaded once from `WristbandStore`. A stored id skips the prompt.
-    @State private var wristband = WristbandStore.load()
-    /// Read once. `true` only while location authorization is `.notDetermined`;
-    /// iOS persists the answer, so the prompt is shown at most once per install.
+    /// The wristband session. Its binding state decides whether the wristband
+    /// prompt is shown; the app stores no wristband id of its own.
+    @StateObject private var wristband = WristbandSession()
+    /// `true` only while location authorization is `.notDetermined`. Read at
+    /// launch and again when a session starts, because a bind can ask for
+    /// location first. iOS persists the answer, so the prompt is shown at most
+    /// once per install.
     @State private var owesLocationAsk = LocationPrompt.isOwed(CLLocationManager().authorizationStatus)
     /// `true` only while notification authorization is `.notDetermined`. Read
     /// once, by the first `.task` below: `notificationSettings()` has no
@@ -79,63 +84,66 @@ struct RootView: View {
 
     var body: some View {
         Group {
-            switch LaunchStep.current(
-                hasWristband: wristband != nil,
-                owesLocationAsk: owesLocationAsk,
-                owesNotificationAsk: owesNotificationAsk
-            ) {
-            case .wristband:
-                WristbandPrompt(onSave: save)
-            case .location:
-                LocationPrompt { owesLocationAsk = false }
-            case .notifications:
-                NotificationPrompt { owesNotificationAsk = false }
-            case .map:
-                if let venue {
-                    VenueMapScreen(venue: venue, wristband: wristband?.canonical ?? "", onSaveWristband: save)
-                } else if let failure {
-                    ContentUnavailableView(
-                        "Cannot reach the venue",
-                        systemImage: "exclamationmark.triangle",
-                        description: Text(failure)
-                    )
-                } else {
-                    ProgressView()
+            if wristband.state == nil {
+                // The binding state arrives within the first frames. Until then
+                // it is unknown whether a stored session exists.
+                ProgressView()
+            } else {
+                switch LaunchStep.current(
+                    hasWristband: wristband.isFollowing,
+                    owesLocationAsk: owesLocationAsk,
+                    owesNotificationAsk: owesNotificationAsk
+                ) {
+                case .wristband:
+                    WristbandPrompt(session: wristband, notice: wristband.endNotice)
+                case .location:
+                    LocationPrompt { owesLocationAsk = false }
+                case .notifications:
+                    NotificationPrompt { owesNotificationAsk = false }
+                case .map:
+                    if let venue {
+                        VenueMapScreen(venue: venue, wristband: wristband)
+                    } else if let failure {
+                        ContentUnavailableView(
+                            "Cannot reach the venue",
+                            systemImage: "exclamationmark.triangle",
+                            description: Text(failure)
+                        )
+                    } else {
+                        ProgressView()
+                    }
                 }
             }
         }
+        // Follows the binding state and runs `restore()` once. Lives as long as
+        // the app's window.
+        .task { await wristband.run() }
         .task {
             let status = await UNUserNotificationCenter.current().notificationSettings().authorizationStatus
             owesNotificationAsk = NotificationPrompt.isOwed(status)
         }
-        // Keyed on the wristband: saving a different id re-runs `connect()`, which
-        // re-points positioning at the new id without restarting the SDK or
-        // rebuilding the map. The key is `nil` while `LocationPrompt` is on
-        // screen, so the SDK and the system location dialog start only after
-        // that screen is answered. The SDK starts while `NotificationPrompt` is
-        // on screen, and the location dialog is shown over it.
-        .task(id: owesLocationAsk ? nil : wristband) { await connect() }
+        .onChange(of: wristband.isFollowing) {
+            owesLocationAsk = LocationPrompt.isOwed(CLLocationManager().authorizationStatus)
+        }
+        // The SDK starts once, when a session is active and `LocationPrompt` is
+        // answered, so the system location dialog follows that screen. The SDK
+        // starts while `NotificationPrompt` is on screen, and the location dialog
+        // is shown over it. The SDK keeps running when the session ends.
+        .task(id: wristband.isFollowing && !owesLocationAsk) {
+            guard wristband.isFollowing, !owesLocationAsk else { return }
+            await connect()
+        }
     }
 
-    private func save(_ id: WristbandID) {
-        WristbandStore.save(id)
-        wristband = id
-    }
-
+    /// Starts the SDK and attaches the binding's position provider, once.
     private func connect() async {
-        guard let wristband else { return }
+        guard venue == nil else { return }
         do {
-            if let venue {
-                // SDK already running: only the wristband changed.
-                await venue.follow(wristband)
-                return
-            }
-            guard let token = VenueConfiguration.token else {
+            guard let token = VenueConfiguration.token, let binding = wristband.binding else {
                 throw VenueConfiguration.SetupIncomplete()
             }
-            let venue = try await Venue.start(token: token)
-            await venue.follow(wristband)
-            self.venue = venue
+            venue = try await Venue.start(token: token, binding: binding)
+            failure = nil
         } catch {
             failure = error.localizedDescription
         }

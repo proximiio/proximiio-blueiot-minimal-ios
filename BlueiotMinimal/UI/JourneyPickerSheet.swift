@@ -4,8 +4,9 @@
 //
 //  Debug builds only. The journey picker and the playback controls, in the
 //  top-leading corner of the map. The picker lists the organisation's journeys
-//  (`Proximiio.journeys()`) and plays one in place of the cloud relay; the
-//  controls pause, resume and stop it. Stop attaches the relay again. The rules
+//  (`Proximiio.journeys()`) and plays one in place of the wristband's
+//  positions; the controls pause, resume and stop it. Stop attaches the
+//  binding's provider again. The rules
 //  are in JourneyPlayback.swift. Release and TestFlight builds do not contain
 //  this code.
 //
@@ -191,7 +192,7 @@ private struct JourneyPlaybackOptionsView: View {
             Section {
                 Button("Play") { onPlay(options) }
             } footer: {
-                Text("Replaces the cloud relay until Stop. Stop attaches the relay again.")
+                Text("Replaces the wristband's positions until Stop.")
             }
         }
         .navigationTitle(row.title)

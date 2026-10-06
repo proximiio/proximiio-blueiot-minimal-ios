@@ -1,0 +1,43 @@
+# Pre-release build: the SDK and the map from local source checkouts.
+#
+# Use this file until SDK 6.0.0-beta.50 and map 6.0.0-beta.29 are published:
+#
+#   xcodegen generate --spec project.local.yml
+#
+# It takes everything from project.yml and replaces only the package sources
+# and the app target's package dependencies. The checkouts must be siblings of
+# this repository:
+#
+#   ../proximiio-ios-sdk-v6    the SDK source package (identity proximiio-ios-sdk-v6)
+#   ../proximiio-ios-map-v6    the map source package
+#
+# Both come from source because the map binary depends on the SDK binary
+# (proximiio-sdk-ios-binary). A graph with the SDK binary and the SDK source
+# has two `Proximiio` modules and does not build. The map source depends on the
+# SDK source by URL; the local SDK path has the same identity and replaces it.
+#
+# The source SDK is split into modules. `Proximiio` does not include the
+# BlueIoT client, so the app target also links the `ProximiioBlueiot` product.
+# The binary has no such product: one flattened module serves `import
+# Proximiio`. The app imports `ProximiioBlueiot` under `#if canImport`.
+#
+# At release: run `xcodegen generate` (project.yml), delete this file, and
+# commit the regenerated project and Package.resolved.
+include:
+  - path: project.yml
+
+packages:REPLACE:
+  Proximiio:
+    path: ../proximiio-ios-sdk-v6
+  ProximiioMap:
+    path: ../proximiio-ios-map-v6
+
+targets:
+  BlueiotMinimal:
+    dependencies:REPLACE:
+      - package: Proximiio
+        product: Proximiio
+      - package: Proximiio
+        product: ProximiioBlueiot
+      - package: ProximiioMap
+        product: ProximiioMap

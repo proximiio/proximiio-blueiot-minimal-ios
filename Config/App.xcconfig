@@ -1,6 +1,6 @@
 // Base build configuration. Tracked; no credential belongs in this file.
 //
-// The three credential keys are empty here and take their values from the
+// The two credential keys are empty here and take their values from the
 // untracked Config/Secrets.xcconfig, which the `#include?` at the end pulls in
 // last (the last assignment wins). Empty values leave the Info.plist keys empty;
 // the app then shows a setup hint instead of crashing.
@@ -10,20 +10,10 @@
 //
 // NOTE: "//" starts a comment in xcconfig. Write URLs as https:/$()/host, without quotes.
 PROXIMIIO_APPLICATION_TOKEN =
-BLUEIOT_CLOUD_RELAY_URL =
-BLUEIOT_CLOUD_RELAY_TOKEN =
+BLUEIOT_RELAY_APP_TOKEN =
 
-// The value below is a venue setting, not a credential, so it is tracked here.
-
-// The floor number the venue's BlueIoT LocalSense engine reports for the ground
-// floor. Proximi.io numbers the ground floor 0. This venue's engine numbers
-// floors -1, 1, 2, 3, 4 with no 0, and engine floor -1 is the ground floor, so
-// the value is -1. At -1 the SDK shifts the ground floor and the floors below it
-// by one: engine -1 is level 0, engine -2 is level -1. Engine 1 and above are
-// not shifted. Engine 0 matches no floor.
-// For an engine that numbers the ground floor 1, set 1: engine 1 is level 0,
-// engine 2 is level 1, engine -1 stays level -1. Empty = 0: no shift.
-// Negative values require an SDK release after 6.0.0-beta.45. Up to beta.45
-// the SDK shifts only floors at and above ground.
-BLUEIOT_GROUND_FLOOR_NO = -1
+// The relay-api install the app binds wristbands with. Not a credential. The
+// default is the Proximi.io sandbox; Config/Secrets.xcconfig can set the venue's
+// own relay-api URL.
+BLUEIOT_RELAY_URL = https:/$()/relay-api-sandbox.proximi.fi
 #include? "Secrets.xcconfig"

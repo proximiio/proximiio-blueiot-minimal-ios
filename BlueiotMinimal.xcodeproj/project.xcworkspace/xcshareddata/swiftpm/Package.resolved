@@ -1,6 +1,15 @@
 {
-  "originHash" : "cde877af2b60d6a20dd737c1165694305af707309bb405d43316e707dc5abc0d",
+  "originHash" : "02f882b1e3920247b26c212f579e4c73d618cf20f9b999cf2fa44413b376ad29",
   "pins" : [
+    {
+      "identity" : "grdb.swift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/groue/GRDB.swift.git",
+      "state" : {
+        "revision" : "b83108d10f42680d78f23fe4d4d80fc88dab3212",
+        "version" : "7.11.1"
+      }
+    },
     {
       "identity" : "maplibre-gl-native-distribution",
       "kind" : "remoteSourceControl",
@@ -11,21 +20,21 @@
       }
     },
     {
-      "identity" : "proximiio-map-ios-binary",
+      "identity" : "swift-docc-plugin",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/proximiio/proximiio-map-ios-binary",
+      "location" : "https://github.com/apple/swift-docc-plugin",
       "state" : {
-        "revision" : "d502e31143ecb4d25e3c6a0778af8d2491db339a",
-        "version" : "6.0.0-beta.28"
+        "revision" : "647c708be89f834fa6a6d4945442793a77ddf5b6",
+        "version" : "1.5.0"
       }
     },
     {
-      "identity" : "proximiio-sdk-ios-binary",
+      "identity" : "swift-docc-symbolkit",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/proximiio/proximiio-sdk-ios-binary",
+      "location" : "https://github.com/swiftlang/swift-docc-symbolkit",
       "state" : {
-        "revision" : "f3bf7e5bdecdf406b1a20c151d952cadc66b6ec7",
-        "version" : "6.0.0-beta.49"
+        "revision" : "b45d1f2ed151d057b54504d653e0da5552844e34",
+        "version" : "1.0.0"
       }
     }
   ],
