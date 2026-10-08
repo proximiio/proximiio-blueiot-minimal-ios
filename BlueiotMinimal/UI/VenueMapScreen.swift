@@ -38,9 +38,6 @@ struct VenueMapScreen: View {
     /// `nil` is single-destination mode: a search bar and one route.
     @State private var journey: Journey? = JourneyStore.load()
     @State private var isPlanningVisit = false
-    /// Changes when the visit restarts on an edited journey, so `JourneyBar`
-    /// is created again with a new navigator.
-    @State private var visitRun = 0
     @State private var isChangingWristband = false
     /// The line from the position to the route ahead (RouteConnector.swift).
     @State private var connector = RouteConnector()
@@ -111,8 +108,7 @@ struct VenueMapScreen: View {
             if let journey {
                 // The journey uses the same session as the map: one map, one
                 // camera and one drawn route in either mode.
-                JourneyBar(session: session, journey: journey, places: places, onEnd: endVisit, onRestart: restartVisit)
-                    .id(visitRun)
+                JourneyBar(session: session, journey: journey, places: places, onEnd: endVisit)
             } else {
                 bottomBar
             }
@@ -268,14 +264,6 @@ struct VenueMapScreen: View {
         journey = nil
         JourneyStore.save(nil)
         session.guidanceRules = .venueWalk
-    }
-
-    /// Restarts the visit on `edited`, a journey with stops the visitor walked
-    /// past marked done. `JourneyBar` has ended its navigator.
-    private func restartVisit(_ edited: Journey) {
-        journey = edited
-        JourneyStore.save(edited)
-        visitRun += 1
     }
 
     /// Recentres the map on the wristband.

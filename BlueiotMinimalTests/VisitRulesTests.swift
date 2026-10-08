@@ -153,6 +153,28 @@ final class VisitRulesTests: XCTestCase {
 
     // MARK: - StopOff
 
+    func testVisitRules() {
+        XCTAssertEqual(JourneyRules.visit.advance, .onDeparture(meters: 8))
+        XCTAssertEqual(JourneyRules.visit.passedStops, .venueWalk)
+        XCTAssertEqual(RouteFollowRules.visit.arrival, .fromAccuracy(multiplier: 2.5, minimumMeters: 5, maximumMeters: 10))
+        XCTAssertEqual(RouteFollowRules.visit.arrivalDwellSeconds, 1)
+    }
+
+    func testVisitSummary() {
+        let stops = [stop("a", state: .active), stop("b"), stop("c")]
+        let atStop = JourneyOverview(
+            remainingStops: stops, legs: [], remainingMeters: 210.4, etaSeconds: 175,
+            unmeasuredLegCount: 0, unreachableStopIDs: ["c"]
+        )
+        XCTAssertEqual(VisitSummary.line(atStop), "3 to go · 210 m · 3 min · 1 unreachable")
+        let walking = JourneyOverview(
+            remainingStops: stops, legs: [], remainingMeters: 150, etaSeconds: 125,
+            unmeasuredLegCount: 0, unreachableStopIDs: [],
+            activeLegRemainingMeters: 39.6, activeLegEtaSeconds: 20
+        )
+        XCTAssertEqual(VisitSummary.line(walking), "This stop: 40 m, 1 min · 3 to go · 150 m · 2 min")
+    }
+
     func testStopOffText() {
         XCTAssertEqual(
             StopOff.menuHeader(goingTo: "Gallery"),

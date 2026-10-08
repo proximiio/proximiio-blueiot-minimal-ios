@@ -115,7 +115,7 @@ xcodebuild -project BlueiotMinimal.xcodeproj -scheme BlueiotMinimal \
 ```
 
 `project.yml` pins the published binary distributions to exact versions: the
-Proximi.io SDK at `6.0.0-beta.52` and the Proximi.io map at `6.0.0-beta.32`.
+Proximi.io SDK at `6.0.0-beta.53` and the Proximi.io map at `6.0.0-beta.33`.
 MapLibre (`6.29.0`) arrives through the map package and must not be declared
 separately.
 
@@ -129,7 +129,6 @@ separately.
 | `Venue/WristbandSession.swift` | The wristband session: `restore()`, the binding state, the location dialogs before a bind, `bind(tagID:)` and `end()` |
 | `Venue/Venue.swift` | SDK start, attachment of the binding's position provider, and a notification per geofence event |
 | `Venue/VenuePOI.swift` | The venue's features as searchable places |
-| `Venue/PassedStops.swift` | The rule that marks a stop done when the visitor walked past it |
 | `Venue/JourneyStore.swift` | Persistence of a visit across launches, and the conversion of a picked place into a stop |
 | `Venue/JourneyPlaybackLaunch.swift` | Debug builds only. The `-journeyPlayback` launch arguments, and the playback provider they and the picker attach |
 | `Venue/JourneyPlayback.swift` | Debug builds only. The journey picker's rows and list states, the playback options, and the playback controls' state |
@@ -142,7 +141,7 @@ separately.
 | `UI/POISearchSheet.swift` | The search list: one place, or several |
 | `UI/GuidanceLine.swift` | The turn-by-turn sentence, in the app's language |
 | `UI/RouteConnector.swift` | The line from the position to the start of the route ahead |
-| `Venue/VisitRules.swift` | The rules behind the visit's text: when a new visit is ordered, the order row in the plan, and the stop-off lines |
+| `Venue/VisitRules.swift` | The rules behind the visit's text: when a new visit is ordered, the order row in the plan, the line of what is left, and the stop-off lines; the journey rules of a visit |
 | `UI/JourneyBar.swift` | The visit: the active stop, the plan, adding, stop-offs, reordering, and the prompt shown when the visitor leaves the route |
 | `UI/JourneyPickerSheet.swift` | Debug builds only. The journey picker button, the picker sheet and the playback controls |
 | `Assets.xcassets/AppIcon.appiconset` | The app icon, a **placeholder**; see below |
@@ -348,7 +347,11 @@ sets none.
 
 The bar shows the active stop, what is left (`overview.remainingStops.count`,
 `overview.remainingMeters`, its ETA and any leg the router refused), and
-**Continue** once the visitor has arrived.
+**Continue** once the visitor has arrived. While a leg is walked, the bar also
+shows the distance and time to the active stop
+(`overview.activeLegRemainingMeters`, `activeLegEtaSeconds`). The library
+updates these values and the visit total at most once a second.
+`VisitSummary.line(_:)` holds the text.
 
 The library marks the active stop reached after the visitor stays within 2.5 ×
 the fix accuracy of it, at least 5 m and at most 10 m, for 1 s
@@ -357,13 +360,13 @@ is 8 m from the stop reached (`JourneyRules.visit`, `.onDeparture(meters: 8)`).
 **Continue** calls `advance()`, which moves on at once.
 
 The library detects arrival only at the active stop, and only after the dwell.
-`PassedStops` marks a planned stop done when a fix lands within 5 m of it on its
-floor and a later fix on that floor is more than 9 m from it. A fix with an
-accuracy worse than 8 m does not count as within 5 m. The rule covers a stop
-reached out of order and a stop walked past with fixes too sparse for the dwell.
-The library has no call that marks a stop done: `JourneyBar` ends its navigator,
-and `VenueMapScreen` starts a new bar on the edited journey. Nothing is marked
-during a stop-off.
+`JourneyRules.visit` also sets `passedStops: .venueWalk`: the library marks a
+planned stop done when a fix lands within 5 m of it on its floor and a later fix
+is more than 9 m from it. A fix with an accuracy worse than 8 m does not count
+as within 5 m. The rule covers a stop reached out of order and a stop walked
+past with fixes too sparse for the dwell. When the passed stop is the active
+one, the journey moves to the next stop. The navigator emits `.stopPassed`.
+Nothing is marked during a stop-off.
 
 The plan is changed on the bar and in **Your visit**, the list button on the bar:
 
@@ -434,7 +437,7 @@ Crash logs from a TestFlight build symbolicate the app's own code. The
 `MapLibre`, `ProximiioBinary` and `ProximiioMapBinary` frameworks are SwiftPM
 binary targets whose dSYMs are not in the archive by design; App Store Connect
 reports "Upload Symbols Failed" for each, which is expected. Proximi.io support
-has the dSYMs for the pinned versions (SDK 6.0.0-beta.52, map 6.0.0-beta.32) from
+has the dSYMs for the pinned versions (SDK 6.0.0-beta.53, map 6.0.0-beta.33) from
 the GitHub source releases.
 
 ## Playing a journey through the sandbox relay-api
@@ -577,7 +580,7 @@ xcodebuild -project BlueiotMinimal.xcodeproj -scheme BlueiotMinimal \
   -destination 'platform=iOS Simulator,name=iPhone 17' test
 ```
 
-Ninety-four tests in fifteen classes. Each covers behaviour that fails without
+Eighty-nine tests in fourteen classes. Each covers behaviour that fails without
 anything on screen looking wrong. The views are not tested; a wrong layout is
 visible.
 
@@ -591,8 +594,7 @@ visible.
 | `BackgroundPositioningTests` | 2 | `LocationPrompt.isOwed(_:)` and `runsInBackground` on `Venue.configuration(token:)` |
 | `DiagnosticsTests` | 1 | No configured secret reaches the log verbatim |
 | `DeviationPromptTests` | 7 | `DeviationPrompt.after(_:showing:)`: the events that open, close and keep the deviation prompt, and its sentences |
-| `PassedStopsTests` | 7 | `PassedStops`: a stop walked past, a stop never entered, imprecise fixes, another floor, a stop no longer open, marking stops done; the arrival and advance rules of a visit |
 | `RouteConnectorTests` | 5 | `RouteConnector.points(guidance:position:shownFloor:)`: the line on the visitor's floor, and no line on another floor, after arrival, or without guidance or a split point |
-| `VisitRulesTests` | 14 | `StartOrder`: when a new visit is ordered, the note on the bar, and that the waiting note is replaced or cleared once the first fix is handled. `OrderAdvice.of`, the stop-off text and `GuidanceLine.offersReroute(for:)`. Two library behaviours: `proposeOrder(from: .visitor)` returns `nil` without a fix, and `JourneyNavigator.end()` switches single-route guidance off |
+| `VisitRulesTests` | 16 | `StartOrder`: when a new visit is ordered, the note on the bar, and that the waiting note is replaced or cleared once the first fix is handled. `OrderAdvice.of`, the arrival, advance and passed-stop rules of a visit, `VisitSummary.line(_:)`, the stop-off text and `GuidanceLine.offersReroute(for:)`. Two library behaviours: `proposeOrder(from: .visitor)` returns `nil` without a fix, and `JourneyNavigator.end()` switches single-route guidance off |
 | `JourneyPickerTests` | 6 | Debug builds only. Picker rows: playable and unplayable journeys, the `validationFailure()` reason, the summary, API order and journeys without an id; the loading, empty and error states; the number formats |
 | `JourneyPlaybackSessionTests` | 7 | Debug builds only. The playback controls' states: start, pause, resume, finish, a failed fetch and stop; the launch arguments; the options' log line |

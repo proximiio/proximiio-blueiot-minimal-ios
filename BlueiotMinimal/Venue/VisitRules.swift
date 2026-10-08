@@ -3,10 +3,11 @@
 //  BlueiotMinimal
 //
 //  The rules behind the visit's text and controls: when a new visit is put in
-//  the shortest order, what the plan says about the order, and what the bar
-//  says during a stop-off. `JourneyBar` and `JourneyPlanSheet` call these and
+//  the shortest order, what the plan says about the order, what is left of
+//  the visit, and what the bar says during a stop-off. `JourneyBar` and `JourneyPlanSheet` call these and
 //  hold no rule of their own.
 //
+import Foundation
 import ProximiioMap
 
 /// The shortest order applied once to a new visit, without a tap.
@@ -98,7 +99,44 @@ enum OrderAdvice: Equatable {
 extension JourneyRules {
     /// The visit moves to the next stop once the visitor is 8 m from the stop
     /// reached. **Continue** on the bar moves on at once.
-    static let visit = JourneyRules(advance: .onDeparture(meters: 8))
+    ///
+    /// `passedStops: .venueWalk` marks a planned stop done when a fix lands
+    /// within 5 m of it on its floor and a later fix is more than 9 m from it.
+    /// A fix with an accuracy worse than 8 m does not count as within 5 m.
+    /// Nothing is marked during a stop-off. The navigator emits `.stopPassed`.
+    static let visit = JourneyRules(advance: .onDeparture(meters: 8), passedStops: .venueWalk)
+}
+
+/// The line under the active stop on the bar.
+enum VisitSummary {
+    /// The distance and time to the active stop, then the stops, distance and
+    /// time left in the visit, and the number of stops without a route.
+    ///
+    /// The part for the active stop is shown while the visitor walks the leg:
+    /// `activeLegRemainingMeters` is `nil` before the visitor is placed on it
+    /// and at a stop reached.
+    static func line(_ overview: JourneyOverview) -> String {
+        var parts: [String] = []
+        if let meters = overview.activeLegRemainingMeters {
+            let seconds = overview.activeLegEtaSeconds ?? 0
+            parts.append("This stop: \(Int(meters.rounded())) m, \(minutes(seconds)) min")
+        }
+        parts += [
+            "\(overview.remainingStops.count) to go",
+            "\(Int(overview.remainingMeters.rounded())) m",
+            "\(minutes(overview.etaSeconds)) min",
+        ]
+        // The library keeps a stop it cannot route to; the count is shown here.
+        if !overview.unreachableStopIDs.isEmpty {
+            parts.append("\(overview.unreachableStopIDs.count) unreachable")
+        }
+        return parts.joined(separator: " · ")
+    }
+
+    /// Whole minutes, at least 1.
+    private static func minutes(_ seconds: TimeInterval) -> Int {
+        max(1, Int((seconds / 60).rounded()))
+    }
 }
 
 extension RouteFollowRules {

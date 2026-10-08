@@ -17,9 +17,10 @@
 //
 //  Arrival: the library marks the active stop reached after the visitor stays
 //  within 5–10 m of it for 1 s (`RouteFollowRules.visit`), and moves on once
-//  the visitor is 8 m away (`JourneyRules.visit`). `PassedStops` marks a
+//  the visitor is 8 m away (`JourneyRules.visit`). The library also marks a
 //  planned stop done when the visitor walked past it without an arrival, for
-//  example out of order or with fixes too sparse for the dwell.
+//  example out of order or with fixes too sparse for the dwell
+//  (`passedStops: .venueWalk`).
 //
 import Proximiio
 import ProximiioMap
@@ -29,9 +30,6 @@ struct JourneyBar: View {
     let places: [VenuePOI]
     /// Called when the visit ends; the map screen restores its search bar.
     let onEnd: () -> Void
-    /// Called with the journey after stops were walked past. The map screen
-    /// starts a new bar, and with it a new navigator, on that journey.
-    let onRestart: (Journey) -> Void
 
     @StateObject private var navigator: JourneyNavigator
     /// Detour offers by amenity. Rebuilt when the set of nearest places changes.
@@ -44,22 +42,19 @@ struct JourneyBar: View {
     @State private var orderNote: String?
     /// `true` while a new visit waits for its first fix to be ordered.
     @State private var ordersOnFirstFix = false
-    /// Set by `endVisit()` and `markPassed(_:)`, so `onDisappear` does not end
-    /// the navigator a second time.
+    /// Set by `endVisit()`, so `onDisappear` does not end the navigator a
+    /// second time.
     @State private var hasEnded = false
-    @State private var passedStops = PassedStops()
 
     @MainActor
     init(
         session: ProximiioMapSession,
         journey: Journey,
         places: [VenuePOI],
-        onEnd: @escaping () -> Void,
-        onRestart: @escaping (Journey) -> Void
+        onEnd: @escaping () -> Void
     ) {
         self.places = places
         self.onEnd = onEnd
-        self.onRestart = onRestart
         // No automatic re-route when the visitor leaves the leg. The drawn leg
         // stays until the visitor answers the prompt. The thresholds are the
         // library defaults (`JourneyDeviationRules`).
@@ -104,9 +99,6 @@ struct JourneyBar: View {
             detours = await offers()
         }
         .task(id: navigator.session.position?.coordinate) { detours = await offers() }
-        .onReceive(navigator.session.$position) { position in
-            if let position { markPassed(position) }
-        }
         // The first fix of a new visit that was started without one.
         .task(id: navigator.session.position == nil) {
             guard ordersOnFirstFix, navigator.session.position != nil else { return }
@@ -140,15 +132,16 @@ struct JourneyBar: View {
     /// The active stop and the remaining visit.
     ///
     /// `overview` is measured when the plan changes, so the total is complete
-    /// before the visitor walks. A leg the router refused is counted as
-    /// unreachable rather than omitted from the sum.
+    /// before the visitor walks. While a leg is walked, the library updates the
+    /// distance and the time at most once a second. `VisitSummary` holds the
+    /// text.
     @ViewBuilder private var header: some View {
         if let stop = navigator.activeStop {
             HStack(spacing: 8) {
                 VStack(alignment: .leading, spacing: 1) {
                     Text(navigator.detourStop == nil ? stop.title : StopOff.title(stop))
                         .lineLimit(1)
-                    Text(navigator.detourStop == nil ? remaining : StopOff.status(
+                    Text(navigator.detourStop == nil ? VisitSummary.line(navigator.overview) : StopOff.status(
                         hasArrived: navigator.hasArrived,
                         next: navigator.reorderableStops.first?.title
                     ))
@@ -182,30 +175,6 @@ struct JourneyBar: View {
         hasEnded = true
         navigator.end()
         onEnd()
-    }
-
-    /// Marks the planned stops the visitor walked past as done, then hands the
-    /// edited journey to `onRestart`. The library has no call that marks a
-    /// stop done, so a new navigator takes the edited journey. The active stop
-    /// is left to the library once it has reported the arrival. Nothing is
-    /// marked during a stop-off.
-    private func markPassed(_ position: VenuePosition) {
-        guard !hasEnded, navigator.detourStop == nil else { return }
-        let arrivedID = navigator.hasArrived ? navigator.activeStop?.id : nil
-        let open = navigator.journey.stops.filter {
-            $0.kind == .planned && ($0.state == .pending || $0.state == .active) && $0.id != arrivedID
-        }
-        let passed = passedStops.update(
-            coordinate: position.coordinate,
-            level: position.floor?.level,
-            horizontalAccuracy: position.horizontalAccuracy,
-            openStops: open
-        )
-        guard !passed.isEmpty else { return }
-        let edited = PassedStops.marking(passed, doneIn: navigator.journey)
-        hasEnded = true
-        navigator.end()
-        onRestart(edited)
     }
 
     /// Puts a new visit in the shortest order from the visitor's position and
@@ -246,20 +215,6 @@ struct JourneyBar: View {
     private var planButton: some View {
         Button { isShowingPlan = true } label: { Image(systemName: "list.bullet") }
             .accessibilityLabel("The plan")
-    }
-
-    private var remaining: String {
-        let overview = navigator.overview
-        var parts = [
-            "\(overview.remainingStops.count) to go",
-            "\(Int(overview.remainingMeters.rounded())) m",
-            "\(max(1, Int((overview.etaSeconds / 60).rounded()))) min",
-        ]
-        // The library keeps a stop it cannot route to; the count is shown here.
-        if !overview.unreachableStopIDs.isEmpty {
-            parts.append("\(overview.unreachableStopIDs.count) unreachable")
-        }
-        return parts.joined(separator: " · ")
     }
 
     /// The visitor's two answers to a deviation. Both end a live detour first
