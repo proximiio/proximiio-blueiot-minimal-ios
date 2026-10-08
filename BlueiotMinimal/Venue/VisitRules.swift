@@ -95,6 +95,23 @@ enum OrderAdvice: Equatable {
     }
 }
 
+extension JourneyRules {
+    /// The visit moves to the next stop once the visitor is 8 m from the stop
+    /// reached. **Continue** on the bar moves on at once.
+    static let visit = JourneyRules(advance: .onDeparture(meters: 8))
+}
+
+extension RouteFollowRules {
+    /// Arrival at a stop of a visit: within 2.5 × the fix accuracy, at least
+    /// 5 m and at most 10 m, for 1 s. The other values are `.venueWalk`'s.
+    /// `.venueWalk` (at least 3 m, for 2 s) missed visitors who walked past a
+    /// stop with relay fixes.
+    static let visit = RouteFollowRules(
+        arrival: .fromAccuracy(multiplier: 2.5, minimumMeters: 5, maximumMeters: 10),
+        arrivalDwellSeconds: 1
+    )
+}
+
 /// The text of a stop-off: a stop at the nearest place of one kind, inserted
 /// before the planned stop by `JourneyNavigator.detour(to:)`.
 enum StopOff {

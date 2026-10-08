@@ -129,6 +129,7 @@ separately.
 | `Venue/WristbandSession.swift` | The wristband session: `restore()`, the binding state, the location dialogs before a bind, `bind(tagID:)` and `end()` |
 | `Venue/Venue.swift` | SDK start, attachment of the binding's position provider, and a notification per geofence event |
 | `Venue/VenuePOI.swift` | The venue's features as searchable places |
+| `Venue/PassedStops.swift` | The rule that marks a stop done when the visitor walked past it |
 | `Venue/JourneyStore.swift` | Persistence of a visit across launches, and the conversion of a picked place into a stop |
 | `Venue/JourneyPlaybackLaunch.swift` | Debug builds only. The `-journeyPlayback` launch arguments, and the playback provider they and the picker attach |
 | `Venue/JourneyPlayback.swift` | Debug builds only. The journey picker's rows and list states, the playback options, and the playback controls' state |
@@ -347,8 +348,22 @@ sets none.
 
 The bar shows the active stop, what is left (`overview.remainingStops.count`,
 `overview.remainingMeters`, its ETA and any leg the router refused), and
-**Continue** once the visitor has arrived. Arrival does not advance the journey;
-the advance rule is `.manual`, and **Continue** calls `advance()`.
+**Continue** once the visitor has arrived.
+
+The library marks the active stop reached after the visitor stays within 2.5 ×
+the fix accuracy of it, at least 5 m and at most 10 m, for 1 s
+(`RouteFollowRules.visit`). The journey moves to the next stop once the visitor
+is 8 m from the stop reached (`JourneyRules.visit`, `.onDeparture(meters: 8)`).
+**Continue** calls `advance()`, which moves on at once.
+
+The library detects arrival only at the active stop, and only after the dwell.
+`PassedStops` marks a planned stop done when a fix lands within 5 m of it on its
+floor and a later fix on that floor is more than 9 m from it. A fix with an
+accuracy worse than 8 m does not count as within 5 m. The rule covers a stop
+reached out of order and a stop walked past with fixes too sparse for the dwell.
+The library has no call that marks a stop done: `JourneyBar` ends its navigator,
+and `VenueMapScreen` starts a new bar on the edited journey. Nothing is marked
+during a stop-off.
 
 The plan is changed on the bar and in **Your visit**, the list button on the bar:
 
@@ -562,7 +577,7 @@ xcodebuild -project BlueiotMinimal.xcodeproj -scheme BlueiotMinimal \
   -destination 'platform=iOS Simulator,name=iPhone 17' test
 ```
 
-Eighty-seven tests in fourteen classes. Each covers behaviour that fails without
+Ninety-four tests in fifteen classes. Each covers behaviour that fails without
 anything on screen looking wrong. The views are not tested; a wrong layout is
 visible.
 
@@ -576,6 +591,7 @@ visible.
 | `BackgroundPositioningTests` | 2 | `LocationPrompt.isOwed(_:)` and `runsInBackground` on `Venue.configuration(token:)` |
 | `DiagnosticsTests` | 1 | No configured secret reaches the log verbatim |
 | `DeviationPromptTests` | 7 | `DeviationPrompt.after(_:showing:)`: the events that open, close and keep the deviation prompt, and its sentences |
+| `PassedStopsTests` | 7 | `PassedStops`: a stop walked past, a stop never entered, imprecise fixes, another floor, a stop no longer open, marking stops done; the arrival and advance rules of a visit |
 | `RouteConnectorTests` | 5 | `RouteConnector.points(guidance:position:shownFloor:)`: the line on the visitor's floor, and no line on another floor, after arrival, or without guidance or a split point |
 | `VisitRulesTests` | 14 | `StartOrder`: when a new visit is ordered, the note on the bar, and that the waiting note is replaced or cleared once the first fix is handled. `OrderAdvice.of`, the stop-off text and `GuidanceLine.offersReroute(for:)`. Two library behaviours: `proposeOrder(from: .visitor)` returns `nil` without a fix, and `JourneyNavigator.end()` switches single-route guidance off |
 | `JourneyPickerTests` | 6 | Debug builds only. Picker rows: playable and unplayable journeys, the `validationFailure()` reason, the summary, API order and journeys without an id; the loading, empty and error states; the number formats |

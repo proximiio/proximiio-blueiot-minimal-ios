@@ -15,6 +15,12 @@
 //  first one. After that a reorder is proposed, or asked for, and a tap
 //  applies it.
 //
+//  Arrival: the library marks the active stop reached after the visitor stays
+//  within 5–10 m of it for 1 s (`RouteFollowRules.visit`), and moves on once
+//  the visitor is 8 m away (`JourneyRules.visit`). `PassedStops` marks a
+//  planned stop done when the visitor walked past it without an arrival, for
+//  example out of order or with fixes too sparse for the dwell.
+//
 import Proximiio
 import ProximiioMap
 import SwiftUI
@@ -23,6 +29,9 @@ struct JourneyBar: View {
     let places: [VenuePOI]
     /// Called when the visit ends; the map screen restores its search bar.
     let onEnd: () -> Void
+    /// Called with the journey after stops were walked past. The map screen
+    /// starts a new bar, and with it a new navigator, on that journey.
+    let onRestart: (Journey) -> Void
 
     @StateObject private var navigator: JourneyNavigator
     /// Detour offers by amenity. Rebuilt when the set of nearest places changes.
@@ -35,24 +44,27 @@ struct JourneyBar: View {
     @State private var orderNote: String?
     /// `true` while a new visit waits for its first fix to be ordered.
     @State private var ordersOnFirstFix = false
-    /// Set by `endVisit()`, so `onDisappear` does not end the navigator a
-    /// second time.
+    /// Set by `endVisit()` and `markPassed(_:)`, so `onDisappear` does not end
+    /// the navigator a second time.
     @State private var hasEnded = false
+    @State private var passedStops = PassedStops()
 
     @MainActor
     init(
         session: ProximiioMapSession,
         journey: Journey,
         places: [VenuePOI],
-        onEnd: @escaping () -> Void
+        onEnd: @escaping () -> Void,
+        onRestart: @escaping (Journey) -> Void
     ) {
         self.places = places
         self.onEnd = onEnd
+        self.onRestart = onRestart
         // No automatic re-route when the visitor leaves the leg. The drawn leg
         // stays until the visitor answers the prompt. The thresholds are the
         // library defaults (`JourneyDeviationRules`).
         _navigator = StateObject(wrappedValue: {
-            let navigator = JourneyNavigator(session: session, journey: journey)
+            let navigator = JourneyNavigator(session: session, journey: journey, rules: .visit, guidanceRules: .visit)
             navigator.deviationPolicy = .askApp
             return navigator
         }())
@@ -92,6 +104,9 @@ struct JourneyBar: View {
             detours = await offers()
         }
         .task(id: navigator.session.position?.coordinate) { detours = await offers() }
+        .onReceive(navigator.session.$position) { position in
+            if let position { markPassed(position) }
+        }
         // The first fix of a new visit that was started without one.
         .task(id: navigator.session.position == nil) {
             guard ordersOnFirstFix, navigator.session.position != nil else { return }
@@ -167,6 +182,30 @@ struct JourneyBar: View {
         hasEnded = true
         navigator.end()
         onEnd()
+    }
+
+    /// Marks the planned stops the visitor walked past as done, then hands the
+    /// edited journey to `onRestart`. The library has no call that marks a
+    /// stop done, so a new navigator takes the edited journey. The active stop
+    /// is left to the library once it has reported the arrival. Nothing is
+    /// marked during a stop-off.
+    private func markPassed(_ position: VenuePosition) {
+        guard !hasEnded, navigator.detourStop == nil else { return }
+        let arrivedID = navigator.hasArrived ? navigator.activeStop?.id : nil
+        let open = navigator.journey.stops.filter {
+            $0.kind == .planned && ($0.state == .pending || $0.state == .active) && $0.id != arrivedID
+        }
+        let passed = passedStops.update(
+            coordinate: position.coordinate,
+            level: position.floor?.level,
+            horizontalAccuracy: position.horizontalAccuracy,
+            openStops: open
+        )
+        guard !passed.isEmpty else { return }
+        let edited = PassedStops.marking(passed, doneIn: navigator.journey)
+        hasEnded = true
+        navigator.end()
+        onRestart(edited)
     }
 
     /// Puts a new visit in the shortest order from the visitor's position and
@@ -250,8 +289,9 @@ struct JourneyBar: View {
     private var buttons: some View {
         HStack(spacing: 16) {
             if navigator.hasArrived {
-                // Arrival does not advance the journey: the advance rule is
-                // `.manual`. This button calls `advance()`.
+                // The journey moves on once the visitor is 8 m from the stop
+                // (`JourneyRules.visit`). This button calls `advance()`, which
+                // moves on at once.
                 Button("Continue") { Task { await navigator.advance() } }
                     .buttonStyle(.borderedProminent)
                     .controlSize(.small)
