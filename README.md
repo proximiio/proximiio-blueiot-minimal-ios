@@ -115,7 +115,7 @@ xcodebuild -project BlueiotMinimal.xcodeproj -scheme BlueiotMinimal \
 ```
 
 `project.yml` pins the published binary distributions to exact versions: the
-Proximi.io SDK at `6.0.0-beta.53` and the Proximi.io map at `6.0.0-beta.33`.
+Proximi.io SDK at `6.0.0-beta.54` and the Proximi.io map at `6.0.0-beta.34`.
 MapLibre (`6.29.0`) arrives through the map package and must not be declared
 separately.
 
@@ -349,7 +349,9 @@ The bar shows the active stop, what is left (`overview.remainingStops.count`,
 `overview.remainingMeters`, its ETA and any leg the router refused), and
 **Continue** once the visitor has arrived. While a leg is walked, the bar also
 shows the distance and time to the active stop
-(`overview.activeLegRemainingMeters`, `activeLegEtaSeconds`). The library
+(`overview.activeLegRemainingMeters`, `activeLegEtaSeconds`). The times are the
+router's times for each leg (`durationSeconds` of each leg in `overview.legs`). A
+leg without one counts at 1.2 m/s. The library
 updates these values and the visit total at most once a second.
 `VisitSummary.line(_:)` holds the text.
 
@@ -437,7 +439,7 @@ Crash logs from a TestFlight build symbolicate the app's own code. The
 `MapLibre`, `ProximiioBinary` and `ProximiioMapBinary` frameworks are SwiftPM
 binary targets whose dSYMs are not in the archive by design; App Store Connect
 reports "Upload Symbols Failed" for each, which is expected. Proximi.io support
-has the dSYMs for the pinned versions (SDK 6.0.0-beta.53, map 6.0.0-beta.33) from
+has the dSYMs for the pinned versions (SDK 6.0.0-beta.54, map 6.0.0-beta.34) from
 the GitHub source releases.
 
 ## Playing a journey through the sandbox relay-api

@@ -620,7 +620,7 @@
 			repositoryURL = "https://github.com/proximiio/proximiio-map-ios-binary";
 			requirement = {
 				kind = exactVersion;
-				version = "6.0.0-beta.33";
+				version = "6.0.0-beta.34";
 			};
 		};
 		C82611E0490E3DF0A6F7D3C3 /* XCRemoteSwiftPackageReference "proximiio-sdk-ios-binary" */ = {
@@ -628,7 +628,7 @@
 			repositoryURL = "https://github.com/proximiio/proximiio-sdk-ios-binary";
 			requirement = {
 				kind = exactVersion;
-				version = "6.0.0-beta.53";
+				version = "6.0.0-beta.54";
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
