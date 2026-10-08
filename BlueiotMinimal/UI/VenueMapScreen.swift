@@ -39,6 +39,8 @@ struct VenueMapScreen: View {
     @State private var journey: Journey? = JourneyStore.load()
     @State private var isPlanningVisit = false
     @State private var isChangingWristband = false
+    /// The line from the position to the route ahead (RouteConnector.swift).
+    @State private var connector = RouteConnector()
     @Environment(\.scenePhase) private var scenePhase
 
     @MainActor
@@ -128,6 +130,10 @@ struct VenueMapScreen: View {
             recordSmoothing()
             recordLanguage()
         }
+        .task { await connector.attach(to: session) }
+        // The guidance changes on every fix of a route or a visit.
+        .onChange(of: session.guidance) { connector.update() }
+        .onChange(of: session.selectedFloor) { connector.update() }
         // The "Smooth position" switch, the "Smoothing" values and the "Map
         // language" choice are changed in the Settings app, so the app is in
         // the background at that time. The new values are applied when the

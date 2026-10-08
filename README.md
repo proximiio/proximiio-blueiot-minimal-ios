@@ -140,6 +140,7 @@ separately.
 | `UI/VenueMapScreen.swift` | Map, search button, route, **New route from here**, and the start of a visit |
 | `UI/POISearchSheet.swift` | The search list: one place, or several |
 | `UI/GuidanceLine.swift` | The turn-by-turn sentence, in the app's language |
+| `UI/RouteConnector.swift` | The line from the position to the start of the route ahead |
 | `Venue/VisitRules.swift` | The rules behind the visit's text: when a new visit is ordered, the order row in the plan, and the stop-off lines |
 | `UI/JourneyBar.swift` | The visit: the active stop, the plan, adding, stop-offs, reordering, and the prompt shown when the visitor leaves the route |
 | `UI/JourneyPickerSheet.swift` | Debug builds only. The journey picker button, the picker sheet and the playback controls |
@@ -288,6 +289,13 @@ wins. A tap on no place, or during a visit, changes nothing.
 **Route line.** `.with(routeLineStyle:)` on the `MapOptions` in `VenueMapScreen`
 draws the route ahead as a gradient from `#3F69FF` at the visitor to `#ED3731`
 at the destination, and the walked part in `#3F69FF` at 30 % opacity.
+
+**Line to the route.** The route ahead starts at the visitor's projection onto
+the route, `RouteGuidance.progress.point`. `RouteConnector` draws a line from the
+position to that point: `#3F69FF`, 6 pt, round cap, below the route layer
+(`canvas.addLayer(_:at: .below(.route))`). It is drawn on the visitor's floor
+only, and not after arrival. Without it, a visitor beside the route, within
+`offRouteMeters`, sees a gap between the position marker and the route.
 
 **Turn-by-turn.** `session.guidanceRules = .venueWalk` in `VenueMapScreen`
 enables it; guidance is off by default. The map library then follows the route it
@@ -549,7 +557,7 @@ xcodebuild -project BlueiotMinimal.xcodeproj -scheme BlueiotMinimal \
   -destination 'platform=iOS Simulator,name=iPhone 17' test
 ```
 
-Sixty-one tests in eleven classes. Each covers behaviour that fails without
+Eighty-seven tests in fourteen classes. Each covers behaviour that fails without
 anything on screen looking wrong. The views are not tested; a wrong layout is
 visible.
 
@@ -563,6 +571,7 @@ visible.
 | `BackgroundPositioningTests` | 2 | `LocationPrompt.isOwed(_:)` and `runsInBackground` on `Venue.configuration(token:)` |
 | `DiagnosticsTests` | 1 | No configured secret reaches the log verbatim |
 | `DeviationPromptTests` | 7 | `DeviationPrompt.after(_:showing:)`: the events that open, close and keep the deviation prompt, and its sentences |
+| `RouteConnectorTests` | 5 | `RouteConnector.points(guidance:position:shownFloor:)`: the line on the visitor's floor, and no line on another floor, after arrival, or without guidance or a split point |
 | `VisitRulesTests` | 14 | `StartOrder`: when a new visit is ordered, the note on the bar, and that the waiting note is replaced or cleared once the first fix is handled. `OrderAdvice.of`, the stop-off text and `GuidanceLine.offersReroute(for:)`. Two library behaviours: `proposeOrder(from: .visitor)` returns `nil` without a fix, and `JourneyNavigator.end()` switches single-route guidance off |
 | `JourneyPickerTests` | 6 | Debug builds only. Picker rows: playable and unplayable journeys, the `validationFailure()` reason, the summary, API order and journeys without an id; the loading, empty and error states; the number formats |
 | `JourneyPlaybackSessionTests` | 7 | Debug builds only. The playback controls' states: start, pause, resume, finish, a failed fetch and stop; the launch arguments; the options' log line |
