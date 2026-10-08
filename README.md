@@ -288,7 +288,12 @@ wins. A tap on no place, or during a visit, changes nothing.
 
 **Route line.** `.with(routeLineStyle:)` on the `MapOptions` in `VenueMapScreen`
 draws the route ahead as a gradient from `#3F69FF` at the visitor to `#ED3731`
-at the destination, and the walked part in `#3F69FF` at 30 % opacity.
+at the destination. The traveled part of the route is not drawn
+(`completedOpacity: 0`). On arrival the map library marks the whole leg as
+traveled, and the computed leg differs from the path the visitor walked. The
+walked trail is drawn instead: `MapOptions.trail` is `.lastMinutes(15)`, and
+`PositionTrailStyle` draws the visitor's fixes in `#3F69FF`, 6 pt, at 30 %
+opacity.
 
 **Line to the route.** The route ahead starts at the visitor's projection onto
 the route, `RouteGuidance.progress.point`. `RouteConnector` draws a line from the

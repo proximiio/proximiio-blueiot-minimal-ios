@@ -50,6 +50,9 @@ struct VenueMapScreen: View {
         var options = MapOptions(
             // The library's floor picker. The app has no other.
             floorSelector: .trailing,
+            // Keeps the visitor's fixes of the last 15 minutes for the walked
+            // trail below.
+            trail: .lastMinutes(15),
             // Draws a route when one is set and clears it when none is.
             route: .automatic
         )
@@ -57,17 +60,26 @@ struct VenueMapScreen: View {
         // credits the ⓘ presented must then be shown by the app; the long-press
         // sheet lists them.
         .with(chrome: .bare)
-        // Draws the route line: a gradient from the visitor to the
-        // destination, and the walked part in faded blue. The values are
-        // from the app design.
+        // Draws the route ahead as a gradient from the visitor to the
+        // destination. The traveled part is not drawn (`completedOpacity: 0`):
+        // on arrival the library marks the whole leg as traveled, and the
+        // computed leg differs from the path the visitor walked. The walked
+        // trail shows that path instead. The values are from the app design.
         .with(routeLineStyle: RouteLineStyle(
             remaining: .gradient(from: MapColor(hex: 0x3F69FF), to: MapColor(hex: 0xED3731)),
             remainingOpacity: 1,
             completedColor: MapColor(hex: 0x3F69FF),
-            completedOpacity: 0.3,
+            completedOpacity: 0,
             widthPoints: 6,
             cap: .round
         ))
+        // The walked trail: the visitor's own fixes in `#3F69FF` at 30 %.
+        options.position.trail = PositionTrailStyle(
+            isVisible: true,
+            color: MapColor(hex: 0x3F69FF),
+            widthPoints: 6,
+            opacity: 0.3
+        )
         // The "Smooth position" switch and the "Smoothing" values in the
         // Settings app (PositionSmoothingSetting.swift). Off draws the dot
         // exactly on each fix. The values apply only while the switch is on.
