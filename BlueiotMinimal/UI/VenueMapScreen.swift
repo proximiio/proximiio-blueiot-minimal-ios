@@ -117,6 +117,8 @@ struct VenueMapScreen: View {
             WristbandStatus(session: wristband)
                 .padding(.top, 8)
         }
+        // The lift ride and the floor change (LevelChangeOverlay.swift).
+        .levelChangeCard(session: session, sdk: venue.sdk)
         #if DEBUG
         // Debug builds only: the journey picker and playback controls
         // (JourneyPickerSheet.swift). Top-leading is the one corner the map

@@ -8,10 +8,11 @@ It binds the phone to the visitor's wristband through the SDK's wristband
 binding client, shows the venue map, searches
 the venue's places, routes to a picked place, shows the next manoeuvre, posts a
 local notification for each geofence entered or left, and walks a planned visit
-of several places in order, with adding, reordering and detours. Positioning
-continues with the phone in a pocket or the screen locked.
+of several places in order, with adding, reordering and detours. A card shows a
+lift ride and the new floor. Positioning continues with the phone in a pocket or
+the screen locked.
 
-2890 lines of Swift in nineteen files, and one Node script,
+3616 lines of Swift in twenty-four files, and one Node script,
 `scripts/journey-run.mjs`, for tests through the sandbox relay-api. Three of the
 Swift files are compiled into debug builds only (see "Playing a journey on the
 phone"). The comments mark where product code goes.
@@ -141,6 +142,8 @@ separately.
 | `UI/POISearchSheet.swift` | The search list: one place, or several |
 | `UI/GuidanceLine.swift` | The turn-by-turn sentence, in the app's language |
 | `UI/RouteConnector.swift` | The line from the position to the start of the route ahead |
+| `Venue/LevelChange.swift` | The rules behind the level change card: lift areas (venue polygons of type `elevator`), a lift ride (3 s of fixes inside one) and the floor change |
+| `UI/LevelChangeOverlay.swift` | The level change card: "Going to level X" or "In the lift" during a ride, "Level X" on the new floor. The map moves to the visitor's floor, and the card closes after 2.8 s |
 | `Venue/VisitRules.swift` | The rules behind the visit's text: when a new visit is ordered, the order row in the plan, the line of what is left, and the stop-off lines; the journey rules of a visit |
 | `UI/JourneyBar.swift` | The visit: the active stop, the plan, adding, stop-offs, reordering, and the prompt shown when the visitor leaves the route |
 | `UI/JourneyPickerSheet.swift` | Debug builds only. The journey picker button, the picker sheet and the playback controls |
@@ -582,7 +585,7 @@ xcodebuild -project BlueiotMinimal.xcodeproj -scheme BlueiotMinimal \
   -destination 'platform=iOS Simulator,name=iPhone 17' test
 ```
 
-Eighty-nine tests in fourteen classes. Each covers behaviour that fails without
+Ninety-nine tests in fifteen classes. Each covers behaviour that fails without
 anything on screen looking wrong. The views are not tested; a wrong layout is
 visible.
 
@@ -597,6 +600,7 @@ visible.
 | `DiagnosticsTests` | 1 | No configured secret reaches the log verbatim |
 | `DeviationPromptTests` | 7 | `DeviationPrompt.after(_:showing:)`: the events that open, close and keep the deviation prompt, and its sentences |
 | `RouteConnectorTests` | 5 | `RouteConnector.points(guidance:position:shownFloor:)`: the line on the visitor's floor, and no line on another floor, after arrival, or without guidance or a split point |
+| `LevelChangeTests` | 10 | `LevelChangeDetector`: the first floor, the change on the first fix or after confirmations, a single fix on another floor, a fix without a floor. `LiftDetector`: a ride after 3 s inside, a walk through a lift, the end of a ride. `LiftArea.all(features:)` from Polygon and MultiPolygon features of type `elevator`. The card text and arrow |
 | `VisitRulesTests` | 16 | `StartOrder`: when a new visit is ordered, the note on the bar, and that the waiting note is replaced or cleared once the first fix is handled. `OrderAdvice.of`, the arrival, advance and passed-stop rules of a visit, `VisitSummary.line(_:)`, the stop-off text and `GuidanceLine.offersReroute(for:)`. Two library behaviours: `proposeOrder(from: .visitor)` returns `nil` without a fix, and `JourneyNavigator.end()` switches single-route guidance off |
 | `JourneyPickerTests` | 6 | Debug builds only. Picker rows: playable and unplayable journeys, the `validationFailure()` reason, the summary, API order and journeys without an id; the loading, empty and error states; the number formats |
 | `JourneyPlaybackSessionTests` | 7 | Debug builds only. The playback controls' states: start, pause, resume, finish, a failed fetch and stop; the launch arguments; the options' log line |
