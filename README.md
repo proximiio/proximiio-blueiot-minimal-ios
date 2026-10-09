@@ -116,7 +116,7 @@ xcodebuild -project BlueiotMinimal.xcodeproj -scheme BlueiotMinimal \
 ```
 
 `project.yml` pins the published binary distributions to exact versions: the
-Proximi.io SDK at `6.0.0-beta.54` and the Proximi.io map at `6.0.0-beta.34`.
+Proximi.io SDK at `6.0.0-beta.55` and the Proximi.io map at `6.0.0-beta.35`.
 MapLibre (`6.29.0`) arrives through the map package and must not be declared
 separately.
 
@@ -442,7 +442,7 @@ Crash logs from a TestFlight build symbolicate the app's own code. The
 `MapLibre`, `ProximiioBinary` and `ProximiioMapBinary` frameworks are SwiftPM
 binary targets whose dSYMs are not in the archive by design; App Store Connect
 reports "Upload Symbols Failed" for each, which is expected. Proximi.io support
-has the dSYMs for the pinned versions (SDK 6.0.0-beta.54, map 6.0.0-beta.34) from
+has the dSYMs for the pinned versions (SDK 6.0.0-beta.55, map 6.0.0-beta.35) from
 the GitHub source releases.
 
 ## Playing a journey through the sandbox relay-api

@@ -42,13 +42,13 @@ packages:
   # client this app positions from.
   Proximiio:
     url: https://github.com/proximiio/proximiio-sdk-ios-binary
-    exactVersion: "6.0.0-beta.54"
+    exactVersion: "6.0.0-beta.55"
   # The venue map renderer, also a published binary. MapLibre arrives through this
   # package and must not be declared here: it is a SwiftPM binaryTarget, and two of
   # them in one graph fail resolution.
   ProximiioMap:
     url: https://github.com/proximiio/proximiio-map-ios-binary
-    exactVersion: "6.0.0-beta.34"
+    exactVersion: "6.0.0-beta.35"
 
 targets:
   BlueiotMinimal:
@@ -114,6 +114,10 @@ targets:
         # binary references. The SDK links ARKit for camera-assisted UWB
         # direction. Without the camera string, App Store upload fails with
         # ITMS-90683.
+        # The SDK also contains CoreMotion code (barometer, PDR), so the Motion
+        # string is present for the same reason. `relayOnly` sets
+        # `barometerEnabled` to `false`: the SDK starts no CoreMotion and iOS
+        # never shows the Motion & Fitness dialog.
         NSLocationWhenInUseUsageDescription: Confirms that you are in the venue when you connect a wristband, and keeps your position updating while the app is in your pocket or the screen is locked. Your position on the map comes from the venue's anchors, not from this phone.
         # This app asks only for When In Use. The SDK binary also references
         # `requestAlwaysAuthorization`, so App Store validation requires this
@@ -126,7 +130,7 @@ targets:
         NSLocationTemporaryUsageDescriptionDictionary:
           WristbandTakeover: Your precise location confirms that you are in the venue before this phone follows the wristband.
         NSBluetoothAlwaysUsageDescription: Bluetooth is used by indoor positioning.
-        NSMotionUsageDescription: Motion data smooths the position between updates.
+        NSMotionUsageDescription: This app does not use motion data. The positioning library includes motion features the app leaves off.
         NSNearbyInteractionUsageDescription: Ultra-wideband ranging improves indoor positioning accuracy.
         NSCameraUsageDescription: The camera helps resolve the direction of nearby ultra-wideband anchors. This app does not use it.
     settings:

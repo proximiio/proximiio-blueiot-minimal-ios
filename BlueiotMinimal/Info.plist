@@ -38,7 +38,7 @@
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Confirms that you are in the venue when you connect a wristband, and keeps your position updating while the app is in your pocket or the screen is locked. Your position on the map comes from the venue's anchors, not from this phone.</string>
 	<key>NSMotionUsageDescription</key>
-	<string>Motion data smooths the position between updates.</string>
+	<string>This app does not use motion data. The positioning library includes motion features the app leaves off.</string>
 	<key>NSNearbyInteractionUsageDescription</key>
 	<string>Ultra-wideband ranging improves indoor positioning accuracy.</string>
 	<key>ProximiioApplicationToken</key>
