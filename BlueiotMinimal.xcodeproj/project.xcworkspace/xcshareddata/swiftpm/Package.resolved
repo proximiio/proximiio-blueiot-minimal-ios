@@ -15,8 +15,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/proximiio/proximiio-map-ios-binary",
       "state" : {
-        "revision" : "e5faf4b499bdb55b280b261dfa997aa948b2f1c0",
-        "version" : "6.0.0-beta.40"
+        "revision" : "aa483062088c38caeb391a62034b041479623fd6",
+        "version" : "6.0.0-beta.41"
       }
     },
     {
