@@ -32,14 +32,21 @@ enum WristbandCopy {
             return "This wristband has not been issued yet. Please ask the staff."
         case .invalidTagID:
             return "This is not a wristband number. Check the number printed on the band."
+        // A refused swap to a new wristband. The current session is kept.
+        case .swapBandsApart:
+            return "Hold your current wristband next to the new one and scan again."
+        case .swapAtReception:
+            return "Your wristband isn't reachable. Please swap it at the reception desk."
         case .rateLimited(let retryAfter, _):
-            guard let retryAfter, retryAfter > 0 else { return "Too many attempts. Try again in a moment." }
-            let seconds = Int(retryAfter.rounded(.up))
-            return "Too many attempts. Try again in \(seconds) \(seconds == 1 ? "second" : "seconds")."
+            return "Too many attempts. " + tryAgain(after: retryAfter)
         case .network:
             return "The venue's server cannot be reached. Check the connection and try again."
         case .server, .invalidResponse:
             return "The venue's server failed. Try again in a moment."
+        // Shown for a failed bind only. On a token refresh the SDK keeps the
+        // session and retries after `retryAfter`.
+        case .signingUnavailable(let retryAfter, _):
+            return "Wristbands cannot be connected right now. " + tryAgain(after: retryAfter)
         case .sessionLost, .bindingClosed:
             return "The wristband session has ended. Connect the wristband again."
         // Configuration faults. A visitor never sees them in a configured build.
@@ -52,6 +59,14 @@ enum WristbandCopy {
         @unknown default:
             return error.localizedDescription
         }
+    }
+
+    /// "Try again in N seconds." for a `retryAfter` from the relay-api, in
+    /// seconds and rounded up, or "Try again in a moment." without one.
+    private static func tryAgain(after retryAfter: TimeInterval?) -> String {
+        guard let retryAfter, retryAfter > 0 else { return "Try again in a moment." }
+        let seconds = Int(retryAfter.rounded(.up))
+        return "Try again in \(seconds) \(seconds == 1 ? "second" : "seconds")."
     }
 
     /// The message for a take-over refused with `not_in_authorized_zone`, per

@@ -61,6 +61,33 @@ final class WristbandCopyTests: XCTestCase {
         )
     }
 
+    /// A refused swap names what the visitor does next, not the relay's text.
+    func testRefusedSwapHasItsOwnMessage() {
+        XCTAssertEqual(
+            WristbandCopy.message(for: BlueiotBindingError.swapBandsApart(requestID: nil)),
+            "Hold your current wristband next to the new one and scan again."
+        )
+        XCTAssertEqual(
+            WristbandCopy.message(for: BlueiotBindingError.swapAtReception(requestID: nil)),
+            "Your wristband isn't reachable. Please swap it at the reception desk."
+        )
+    }
+
+    func testSigningUnavailableStatesTheWait() {
+        XCTAssertEqual(
+            WristbandCopy.message(for: BlueiotBindingError.signingUnavailable(retryAfter: 1, requestID: nil)),
+            "Wristbands cannot be connected right now. Try again in 1 second."
+        )
+        XCTAssertEqual(
+            WristbandCopy.message(for: BlueiotBindingError.signingUnavailable(retryAfter: 9.5, requestID: nil)),
+            "Wristbands cannot be connected right now. Try again in 10 seconds."
+        )
+        XCTAssertEqual(
+            WristbandCopy.message(for: BlueiotBindingError.signingUnavailable(retryAfter: nil, requestID: nil)),
+            "Wristbands cannot be connected right now. Try again in a moment."
+        )
+    }
+
     // MARK: - End reasons
 
     func testSupersededNoticeNamesTheOtherPhone() {

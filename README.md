@@ -223,13 +223,20 @@ sentence, keyed on the case and never on the relay-api's English message:
 | `.tagNotAvailable` | This wristband is not active. Please ask the staff. |
 | `.tagNotAtReception` | Connect this wristband at the reception desk. |
 | `.tagNotIssued` | This wristband has not been issued yet. Please ask the staff. |
+| `.swapBandsApart` | Hold your current wristband next to the new one and scan again. |
+| `.swapAtReception` | Your wristband isn't reachable. Please swap it at the reception desk. |
 | `.rateLimited` | Too many attempts. Try again in N seconds. |
+| `.signingUnavailable` | Wristbands cannot be connected right now. Try again in N seconds. |
 | `.appTokenRejected`, `.notARelayAPI` | Names the configuration key to check |
 
 **Connecting another wristband.** Press and hold the map for 1.5 seconds and the
 same prompt opens as a sheet. There is no visible control; for one,
 `VenueMapScreen.isChangingWristband` is the single switch. A successful bind
-replaces the current session; the map and the SDK keep running.
+replaces the current session; the map and the SDK keep running. Outside the
+reception desk, on a site with a swap distance
+(`BlueiotBindingPolicy.swapNearMeters`), the relay-api accepts the new wristband
+only next to the current one. A refused swap fails with `.swapBandsApart` or
+`.swapAtReception` and keeps the current session.
 
 The same sheet lists the **map credits**. The map hides MapLibre's attribution ⓘ,
 its logo and the compass (`.with(chrome: .bare)` on the `MapOptions` in
