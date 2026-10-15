@@ -69,11 +69,11 @@ private struct LevelChangeModifier: ViewModifier {
 
     /// The target floor of the route's next manoeuvre when it is a level
     /// change from `from`.
-    private func routeTarget(from: Int) -> Int? {
+    private func routeTarget(from: Double) -> Double? {
         guard case .levelChange(let change)? = session.guidance?.manoeuvre?.kind,
-              Int(change.fromLevel.rounded()) == from
+              FloorLevel.matches(change.fromLevel, from)
         else { return nil }
-        return Int(change.toLevel.rounded())
+        return change.toLevel
     }
 
     private func arrive(_ change: LevelChange) {

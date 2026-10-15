@@ -48,9 +48,21 @@ final class LevelChangeTests: XCTestCase {
         var detector = LevelChangeDetector()
         _ = detector.update(level: 4)
         XCTAssertNil(detector.update(level: nil))
-        let change = detector.update(level: 2.0001)
+        let change = detector.update(level: 2)
         XCTAssertEqual(change, LevelChange(from: 4, to: 2))
         XCTAssertEqual(change?.isUp, false)
+    }
+
+    /// Level 1.5 is a floor of its own. A level within 0.01 is the same floor.
+    func testLevelOnePointFiveIsAFloorOfItsOwn() {
+        var detector = LevelChangeDetector()
+        _ = detector.update(level: 1)
+        let change = detector.update(level: 1.5)
+        XCTAssertEqual(change, LevelChange(from: 1, to: 1.5))
+        XCTAssertEqual(change?.isUp, true)
+        XCTAssertEqual(detector.update(level: 2), LevelChange(from: 1.5, to: 2))
+        XCTAssertNil(detector.update(level: 2.004))
+        XCTAssertEqual(detector.level, 2)
     }
 
     // MARK: Lift ride
@@ -121,5 +133,7 @@ final class LevelChangeTests: XCTestCase {
         XCTAssertEqual(LevelChangeCard(phase: .riding, from: 0, to: 2).symbol, "arrow.up")
         XCTAssertEqual(LevelChangeCard(phase: .arrived, from: 2, to: 1).title, "Level 1")
         XCTAssertEqual(LevelChangeCard(phase: .arrived, from: 2, to: 1).symbol, "arrow.down")
+        XCTAssertEqual(LevelChangeCard(phase: .arrived, from: 1, to: 1.5).title, "Level 1.5")
+        XCTAssertEqual(LevelChangeCard(phase: .riding, from: 1.5, to: 2).symbol, "arrow.up")
     }
 }

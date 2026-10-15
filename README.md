@@ -585,7 +585,7 @@ xcodebuild -project BlueiotMinimal.xcodeproj -scheme BlueiotMinimal \
   -destination 'platform=iOS Simulator,name=iPhone 17' test
 ```
 
-Ninety-nine tests in fifteen classes. Each covers behaviour that fails without
+One hundred and five tests in sixteen classes. Each covers behaviour that fails without
 anything on screen looking wrong. The views are not tested; a wrong layout is
 visible.
 
@@ -599,8 +599,9 @@ visible.
 | `BackgroundPositioningTests` | 2 | `LocationPrompt.isOwed(_:)` and `runsInBackground` on `Venue.configuration(token:)` |
 | `DiagnosticsTests` | 1 | No configured secret reaches the log verbatim |
 | `DeviationPromptTests` | 7 | `DeviationPrompt.after(_:showing:)`: the events that open, close and keep the deviation prompt, and its sentences |
-| `RouteConnectorTests` | 5 | `RouteConnector.points(guidance:position:shownFloor:)`: the line on the visitor's floor, and no line on another floor, after arrival, or without guidance or a split point |
-| `LevelChangeTests` | 10 | `LevelChangeDetector`: the first floor, the change on the first fix or after confirmations, a single fix on another floor, a fix without a floor. `LiftDetector`: a ride after 3 s inside, a walk through a lift, the end of a ride. `LiftArea.all(features:)` from Polygon and MultiPolygon features of type `elevator`. The card text and arrow |
+| `FloorLevelTests` | 3 | `FloorLevel.matches(_:_:)`, the SDK rule the app compares floor levels with: level 1.5 is neither level 1 nor level 2, levels within 0.01 match, and an unknown level matches any level |
+| `RouteConnectorTests` | 7 | `RouteConnector.points(guidance:position:shownFloor:)`: the line on the visitor's floor, including level 1.5, and no line on another floor (level 1.5 with level 2 shown), after arrival, or without guidance or a split point |
+| `LevelChangeTests` | 11 | `LevelChangeDetector`: the first floor, the change on the first fix or after confirmations, a single fix on another floor, a fix without a floor, level 1.5 as a floor of its own. `LiftDetector`: a ride after 3 s inside, a walk through a lift, the end of a ride. `LiftArea.all(features:)` from Polygon and MultiPolygon features of type `elevator`. The card text and arrow |
 | `VisitRulesTests` | 16 | `StartOrder`: when a new visit is ordered, the note on the bar, and that the waiting note is replaced or cleared once the first fix is handled. `OrderAdvice.of`, the arrival, advance and passed-stop rules of a visit, `VisitSummary.line(_:)`, the stop-off text and `GuidanceLine.offersReroute(for:)`. Two library behaviours: `proposeOrder(from: .visitor)` returns `nil` without a fix, and `JourneyNavigator.end()` switches single-route guidance off |
 | `JourneyPickerTests` | 6 | Debug builds only. Picker rows: playable and unplayable journeys, the `validationFailure()` reason, the summary, API order and journeys without an id; the loading, empty and error states; the number formats |
 | `JourneyPlaybackSessionTests` | 7 | Debug builds only. The playback controls' states: start, pause, resume, finish, a failed fetch and stop; the launch arguments; the options' log line |

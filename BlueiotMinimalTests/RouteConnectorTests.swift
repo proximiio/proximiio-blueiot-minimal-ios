@@ -44,6 +44,18 @@ final class RouteConnectorTests: XCTestCase {
         ), [])
     }
 
+    func testNoLineFromLevelOnePointFiveWithLevelTwoShown() {
+        XCTAssertEqual(RouteConnector.points(
+            guidance: guidance(start: start), position: position(level: 1.5), shownFloor: FloorKey(level: 2)
+        ), [])
+    }
+
+    func testLineOnLevelOnePointFive() {
+        XCTAssertEqual(RouteConnector.points(
+            guidance: guidance(start: start), position: position(level: 1.5), shownFloor: FloorKey(level: 1.5)
+        ), [here, start])
+    }
+
     func testNoLineAfterArrival() {
         XCTAssertEqual(RouteConnector.points(
             guidance: guidance(start: start, hasArrived: true), position: position(level: 1), shownFloor: FloorKey(level: 1)
@@ -60,6 +72,9 @@ final class RouteConnectorTests: XCTestCase {
     func testPositionWithoutFloorCountsAsOnTheShownFloor() {
         XCTAssertEqual(RouteConnector.points(
             guidance: guidance(start: start), position: position(level: nil), shownFloor: FloorKey(level: 2)
+        ), [here, start])
+        XCTAssertEqual(RouteConnector.points(
+            guidance: guidance(start: start), position: position(level: nil), shownFloor: FloorKey(level: 1.5)
         ), [here, start])
     }
 }

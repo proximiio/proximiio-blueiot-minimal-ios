@@ -13,34 +13,39 @@ import Proximiio
 import ProximiioMap
 
 struct LevelChange: Equatable {
-    var from: Int
-    var to: Int
+    var from: Double
+    var to: Double
     var isUp: Bool { to > from }
 }
 
 struct LevelChangeDetector {
     /// The number of consecutive fixes on a new floor that confirm the change.
     /// With 1, the change is reported on the first fix on the new floor.
-    var confirmations = 1
-    private(set) var level: Int?
-    private var candidate: Int?
+    var confirmations: Int
+    private(set) var level: Double?
+    private var candidate: Double?
     private var candidateFixes = 0
 
-    /// Takes the floor of one fix. Returns the change once the new floor is
-    /// confirmed. The first floor is no change. A fix without a floor is ignored.
-    mutating func update(level fixLevel: Double?) -> LevelChange? {
-        guard let fixLevel else { return nil }
-        let next = Int(fixLevel.rounded())
+    init(confirmations: Int = 1) {
+        self.confirmations = confirmations
+    }
+
+    /// Takes the floor level of one fix. Returns the change once the new floor
+    /// is confirmed. The first floor is no change. A fix without a floor is
+    /// ignored. `FloorLevel.matches(_:_:)` compares the levels, so level 1.5 is
+    /// a floor of its own.
+    mutating func update(level next: Double?) -> LevelChange? {
+        guard let next else { return nil }
         guard let current = level else {
             level = next
             return nil
         }
-        guard next != current else {
+        guard !FloorLevel.matches(next, current) else {
             candidate = nil
             candidateFixes = 0
             return nil
         }
-        if candidate == next {
+        if let candidate, FloorLevel.matches(candidate, next) {
             candidateFixes += 1
         } else {
             candidate = next
@@ -139,16 +144,16 @@ struct LevelChangeCard: Equatable {
     enum Phase: Equatable { case riding, arrived }
 
     var phase: Phase
-    var from: Int
+    var from: Double
     /// The floor the visitor goes to. During a ride it is the target of the
     /// route's level change at this lift, or `nil` without a route.
-    var to: Int?
+    var to: Double?
 
     /// The card's text.
     var title: String {
         switch (phase, to) {
-        case (.arrived, let to?): "Level \(to)"
-        case (.riding, let to?): "Going to level \(to)"
+        case (.arrived, let to?): "Level \(MapLevelFormat.trimmed(to))"
+        case (.riding, let to?): "Going to level \(MapLevelFormat.trimmed(to))"
         default: "In the lift"
         }
     }

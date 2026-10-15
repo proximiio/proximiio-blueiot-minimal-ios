@@ -16,6 +16,7 @@
 //  style reload removes every layer the app added.
 //
 import MapLibre
+import Proximiio
 import ProximiioMap
 import UIKit
 
@@ -60,11 +61,14 @@ final class RouteConnector {
     /// Empty without guidance, after arrival, without a split point, without a
     /// position, and while the map shows a floor other than the visitor's. A
     /// position without a floor counts as on the shown floor.
+    ///
+    /// `FloorLevel.matches(_:_:)` compares the levels. Level 1.5 is a floor of
+    /// its own, not level 2.
     nonisolated static func points(guidance: RouteGuidance?, position: VenuePosition?, shownFloor: FloorKey) -> [MapCoordinate] {
         guard let guidance, !guidance.hasArrived,
               let start = guidance.progress.point,
               let position,
-              position.floor.map({ Int($0.level.rounded()) == Int(shownFloor.level.rounded()) }) ?? true
+              FloorLevel.matches(position.floor?.level, shownFloor.level)
         else { return [] }
         return [position.coordinate, start]
     }
