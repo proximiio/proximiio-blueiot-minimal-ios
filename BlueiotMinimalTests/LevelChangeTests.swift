@@ -2,8 +2,8 @@
 //  LevelChangeTests.swift
 //  BlueiotMinimalTests
 //
-//  `LevelChangeDetector`, `LiftDetector`, `LiftArea` and the card text. The
-//  card view is not tested.
+//  `LevelChangeDetector`, `LiftDetector`, `LiftArea`, the card text and the
+//  level change instruction. The card view is not tested.
 //
 import XCTest
 @testable import BlueiotMinimal
@@ -135,5 +135,20 @@ final class LevelChangeTests: XCTestCase {
         XCTAssertEqual(LevelChangeCard(phase: .arrived, from: 2, to: 1).symbol, "arrow.down")
         XCTAssertEqual(LevelChangeCard(phase: .arrived, from: 1, to: 1.5).title, "Level 1.5")
         XCTAssertEqual(LevelChangeCard(phase: .riding, from: 1.5, to: 2).symbol, "arrow.up")
+    }
+
+    /// The SDK reports one level change per ride. A lift ride from level 1 to
+    /// level 4 is one change, and the guidance line and the card name level 4.
+    func testRideOverSeveralFloorsNamesTheLastFloor() {
+        let ride = RouteLevelChange(
+            featureType: "elevator",
+            fromLevel: 1,
+            toLevel: 4,
+            coordinate: MapCoordinate(latitude: 48.0005, longitude: 17.0005)
+        )
+        XCTAssertEqual(GuidanceLine.instruction(for: .levelChange(ride)), "Take the elevator to level 4")
+        XCTAssertEqual(LevelChangeCard(phase: .riding, from: 1, to: ride.toLevel).title, "Going to level 4")
+        XCTAssertEqual(LevelChangeCard(phase: .riding, from: 1, to: ride.toLevel).symbol, "arrow.up")
+        XCTAssertEqual(LevelChangeCard(phase: .riding, from: 4, to: 0).symbol, "arrow.down")
     }
 }

@@ -96,6 +96,20 @@ final class WristbandCopyTests: XCTestCase {
         )
     }
 
+    /// A session the relay-api gives no verdict on ends with `.sessionLost`. The
+    /// map closes, and the wristband prompt asks the visitor to connect again.
+    func testLostSessionAsksToConnectAgain() {
+        XCTAssertEqual(
+            WristbandCopy.notice(for: .sessionLost),
+            "The connection to your wristband was lost. Connect it again."
+        )
+        XCTAssertNil(WristbandCopy.status(of: .ended(.sessionLost)))
+        XCTAssertEqual(
+            WristbandCopy.message(for: BlueiotBindingError.sessionLost(requestID: nil)),
+            "The wristband session has ended. Connect the wristband again."
+        )
+    }
+
     /// A reason a newer relay adds still ends the visit with a notice.
     func testUnknownReasonHasANotice() {
         XCTAssertEqual(WristbandCopy.notice(for: .unknown("NEW_REASON")), "Your visit has ended.")
